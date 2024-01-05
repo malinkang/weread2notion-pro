@@ -61,7 +61,7 @@ def get_bookmark_list(page_id, bookId):
     return bookmarks
 
 
-def get_review_list(bookId):
+def get_review_list(page_id,bookId):
     """获取笔记"""
     filter = {"property": "书籍", "relation": {"contains": page_id}}
     results = notion_helper.query_all_by_book(notion_helper.review_database_id, filter)
@@ -358,13 +358,10 @@ def append_blocks_to_notion(id, blocks, after, contents):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("ref")
-    parser.add_argument("repository")
     options = parser.parse_args()
     weread_cookie = os.getenv("WEREAD_COOKIE")
-    ref = options.ref
-    branch = ref.split("/")[-1]
-    repository = options.repository
+    branch = os.getenv("REF").split("/")[-1]
+    repository =  os.getenv("REPOSITORY")
     weread_api = WeReadApi()
     notion_helper = NotionHelper()
     latest_sort = get_sort()
@@ -397,7 +394,7 @@ if __name__ == "__main__":
             )
             chapter = weread_api.get_chapter_info(bookId)
             bookmark_list = get_bookmark_list(page_id, bookId)
-            reviews = get_review_list(bookId)
+            reviews = get_review_list(page_id,bookId)
             bookmark_list.extend(reviews)
             content = sort_notes(page_id, chapter, bookmark_list)
             append_blocks(page_id, content)

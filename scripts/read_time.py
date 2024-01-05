@@ -41,9 +41,16 @@ if __name__ == "__main__":
     weread_cookie = os.getenv("WEREAD_COOKIE")
     notion_helper = NotionHelper()
     weread_api = WeReadApi()
+    if(os.path.isfile("./OUT_FOLDER/weread.svg")):
+        image_url = notion_helper.image_dict.get("url")
+        block_id = notion_helper.image_dict.get("id")
+        branch = os.getenv("REF").split("/")[-1]
+        repository =  os.getenv("REPOSITORY")
+        new_image_url = f"https://raw.githubusercontent.com/{repository}/{branch}/OUT_FOLDER/weread.svg"
+        if(image_url and block_id):
+            notion_helper.update_image_block_link(block_id,new_image_url)
     api_data = weread_api.get_api_data()
     readTimes = dict(sorted(api_data["readTimes"].items()))
-    print(f"readTimes {len(readTimes)}")
     results =  notion_helper.query_all(database_id=notion_helper.day_database_id)
     for result in results:
         timestamp = result.get("properties").get("时间戳").get("number")
@@ -51,7 +58,6 @@ if __name__ == "__main__":
         id = result.get("id")
         if(str(timestamp) in readTimes):
             value = readTimes.pop(str(timestamp))
-            print(value)
             if(value !=duration):
                 insert_to_notion(page_id=id,timestamp=timestamp,duration=value)
     for key,value in readTimes.items():

@@ -46,7 +46,7 @@ class WeReadApi:
             books.sort(key=lambda x: x["sort"])
             return books
         else:
-            raise Exception(f"Could not get notebook list")
+            raise Exception(f"Could not get notebook list {r.text}")
 
     @retry(stop_max_attempt_number=3, wait_fixed=5000)
     def get_bookinfo(self, bookId):
@@ -61,7 +61,7 @@ class WeReadApi:
             newRating = data["newRating"] / 1000
             return (isbn, newRating)
         else:
-            raise Exception("get {bookId} book info failed {r.text}")
+            return ("", 0)
 
     @retry(stop_max_attempt_number=3, wait_fixed=5000)
     def get_bookmark_list(self, bookId):
@@ -84,7 +84,7 @@ class WeReadApi:
         if r.ok:
             return r.json()
         else:
-            raise Exception("get {bookId} read info failed {r.text}")
+            raise Exception(f"get {bookId} read info failed {r.text}")
 
     @retry(stop_max_attempt_number=3, wait_fixed=5000)
     def get_review_list(self, bookId):

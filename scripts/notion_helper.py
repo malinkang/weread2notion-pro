@@ -1,9 +1,11 @@
 import logging
 import os
+import re
 import time
 
 from notion_client import Client
 from retrying import retry
+from datetime import timedelta
 
 from utils import (
     format_date,
@@ -26,19 +28,70 @@ BOOKMARK_ICON_URL = "https://www.notion.so/icons/bookmark_gray.svg"
 
 
 class NotionHelper:
+    database_name_dict = {
+        "BOOK_DATABASE_NAME":"书架",
+        "REVIEW_DATABASE_NAME":"笔记",
+        "BOOKMARK_DATABASE_NAME":"划线",
+        "DAY_DATABASE_NAME":"日",
+        "WEEK_DATABASE_NAME":"周",
+        "MONTH_DATABASE_NAME":"月",
+        "YEAR_DATABASE_NAME":"年",
+        "CATEGORY_DATABASE_NAME":"分类",
+        "AUTHOR_DATABASE_NAME":"作者",
+        "CHAPTER_DATABASE_NAME":"章节",
+    }
+    database_id_dict = {}
+    image_dict = {}
     def __init__(self):
         self.client = Client(auth=os.getenv("NOTION_TOKEN"), log_level=logging.ERROR)
-        self.book_database_id = os.getenv("BOOK_DATABASE_ID")
-        self.author_database_id = os.getenv("AUTHOR_DATABASE_ID")
-        self.category_database_id = os.getenv("CATEGORY_DATABASE_ID")
-        self.bookmark_database_id = os.getenv("BOOKMARK_DATABASE_ID")
-        self.review_database_id = os.getenv("REVIEW_DATABASE_ID")
-        self.chapter_database_id = os.getenv("CHAPTER_DATABASE_ID")
-        self.year_database_id = os.getenv("YEAR_DATABASE_ID")
-        self.week_database_id = os.getenv("WEEK_DATABASE_ID")
-        self.month_database_id = os.getenv("MONTH_DATABASE_ID")
-        self.day_database_id = os.getenv("DAY_DATABASE_ID")
-        self.__cache = {}
+        self.__cache={}
+        self.search_database(self.extract_page_id(os.getenv("NOTION_PAGE")))
+        for key in self.database_name_dict.keys():
+            if(os.getenv(key)!=None and os.getenv(key)!=""):
+                self.database_name_dict[key] = os.getenv(key)
+        self.book_database_id = self.database_id_dict.get(self.database_name_dict.get("BOOK_DATABASE_NAME"))
+        self.review_database_id = self.database_id_dict.get(self.database_name_dict.get("REVIEW_DATABASE_NAME"))
+        self.bookmark_database_id = self.database_id_dict.get(self.database_name_dict.get("BOOKMARK_DATABASE_NAME"))
+        self.day_database_id = self.database_id_dict.get(self.database_name_dict.get("DAY_DATABASE_NAME"))
+        self.week_database_id = self.database_id_dict.get(self.database_name_dict.get("WEEK_DATABASE_NAME"))
+        self.month_database_id = self.database_id_dict.get(self.database_name_dict.get("MONTH_DATABASE_NAME"))
+        self.year_database_id = self.database_id_dict.get(self.database_name_dict.get("YEAR_DATABASE_NAME"))
+        self.category_database_id = self.database_id_dict.get(self.database_name_dict.get("CATEGORY_DATABASE_NAME"))
+        self.author_database_id = self.database_id_dict.get(self.database_name_dict.get("AUTHOR_DATABASE_NAME"))
+        self.chapter_database_id = self.database_id_dict.get(self.database_name_dict.get("CHAPTER_DATABASE_NAME"))
+
+    def extract_page_id(self,notion_url):
+        # 正则表达式匹配 32 个字符的 Notion page_id
+        match = re.search(r"([a-f0-9]{32}|[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12})", notion_url)
+        if match:
+            return match.group(0)
+        else:
+            raise Exception(f"获取NotionID失败，请检查输入的Url是否正确")
+    def search_database(self,block_id):
+        children = self.client.blocks.children.list(block_id=block_id)["results"]
+        # 遍历子块
+        for child in children:
+            # 检查子块的类型
+            
+            if child["type"] == "child_database":
+                self.database_id_dict[child.get('child_database').get('title')] = child.get("id")
+            elif child["type"] == "image":
+                self.image_dict["url"] = child.get('image').get('external').get('url')
+                self.image_dict["id"] = child.get('id')
+            # 如果子块有子块，递归调用函数
+            if "has_children" in child and child["has_children"]:
+                self.search_database(child["id"])
+
+    def update_image_block_link(self,block_id, new_image_url):
+        # 更新 image block 的链接
+        self.client.blocks.update(
+            block_id=block_id,
+            image={
+                "external": {
+                    "url": new_image_url
+                }
+            }
+        )
 
     def get_week_relation_id(self, date):
         year = date.isocalendar().year
@@ -68,10 +121,11 @@ class NotionHelper:
 
     def get_day_relation_id(self, date):
         new_date = date.replace(hour=0, minute=0, second=0, microsecond=0)
+        timestamp = (new_date-timedelta(hours=8)).timestamp()
         day = new_date.strftime("%Y年%m月%d日")
         properties = {
             "日期": get_date(format_date(date)),
-            "时间戳": get_number(new_date.timestamp()),
+            "时间戳": get_number(timestamp),
         }
         properties["年"] = get_relation(
             [

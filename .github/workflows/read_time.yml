@@ -1,26 +1,29 @@
-name: weread sync
+name: read time sync
 
 on:
   workflow_dispatch:
   schedule:
-    - cron: "0 0 * * *"
+    - cron: "0 */3 * * *"
 jobs:
   sync:
     name: Sync
     runs-on: ubuntu-latest
     env:
       NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
-      BOOK_DATABASE_ID: ${{ secrets.BOOK_DATABASE_ID }}
-      AUTHOR_DATABASE_ID: ${{ secrets.AUTHOR_DATABASE_ID }}
-      CATEGORY_DATABASE_ID: ${{ secrets.CATEGORY_DATABASE_ID }}
-      BOOKMARK_DATABASE_ID: ${{ secrets.BOOKMARK_DATABASE_ID }}
-      REVIEW_DATABASE_ID: ${{ secrets.REVIEW_DATABASE_ID }}
-      CHAPTER_DATABASE_ID: ${{ secrets.CHAPTER_DATABASE_ID }}
-      YEAR_DATABASE_ID: ${{ secrets.YEAR_DATABASE_ID }}
-      WEEK_DATABASE_ID: ${{ secrets.WEEK_DATABASE_ID }}
-      MONTH_DATABASE_ID: ${{ secrets.MONTH_DATABASE_ID }}
-      DAY_DATABASE_ID: ${{ secrets.DAY_DATABASE_ID }}
+      NOTION_PAGE: ${{ secrets.NOTION_PAGE }}
       WEREAD_COOKIE: ${{ secrets.WEREAD_COOKIE }}
+      BOOK_DATABASE_NAME: ${{ vars.BOOK_DATABASE_NAME }}
+      AUTHOR_DATABASE_NAME: ${{ vars.AUTHOR_DATABASE_NAME }}
+      CATEGORY_DATABASE_NAME: ${{ vars.CATEGORY_DATABASE_NAME }}
+      BOOKMARK_DATABASE_NAME: ${{ vars.BOOKMARK_DATABASE_NAME }}
+      REVIEW_DATABASE_NAME: ${{ vars.REVIEW_DATABASE_NAME }}
+      CHAPTER_DATABASE_NAME: ${{ vars.CHAPTER_DATABASE_NAME }}
+      YEAR_DATABASE_NAME: ${{ vars.YEAR_DATABASE_NAME }}
+      WEEK_DATABASE_NAME: ${{ vars.WEEK_DATABASE_NAME }}
+      MONTH_DATABASE_NAME: ${{ vars.MONTH_DATABASE_NAME }}
+      DAY_DATABASE_NAME: ${{ vars.DAY_DATABASE_NAME }}
+      REF: ${{ github.ref }}
+      REPOSITORY: ${{ github.repository }}
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -32,6 +35,17 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
+      - name: weread heatmap
+        run: |
+          github_heatmap weread  --weread_cookie "${{secrets.WEREAD_COOKIE}}" --year $(date +"%Y") --me "${{secrets.NAME}}" --with-animation --background-color=#ffffff --track-color=#ACE7AE --special-color1=#69C16E --special-color2=#549F57 --dom-color=#EBEDF0 --text-color=#000000
+      - name: push
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add .
+          git commit -m 'add new cover' || echo "nothing to commit"
+          git push || echo "nothing to push"
       - name: read time sync
         run: |
           python -u scripts/read_time.py
+  
