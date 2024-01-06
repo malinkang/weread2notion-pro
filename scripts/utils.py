@@ -1,6 +1,7 @@
 import calendar
 from datetime import datetime
 from datetime import timedelta
+MAX_LENGTH = 1024  # NOTION 2000个字符限制https://developers.notion.com/reference/request-limits
 
 def get_heading(level, content):
     if level == 1:
@@ -16,7 +17,7 @@ def get_heading(level, content):
                 {
                     "type": "text",
                     "text": {
-                        "content": content,
+                        "content": content[:MAX_LENGTH],
                     },
                 }
             ],
@@ -32,11 +33,11 @@ def get_table_of_contents():
 
 
 def get_title(content):
-    return {"title": [{"type": "text", "text": {"content": content}}]}
+    return {"title": [{"type": "text", "text": {"content": content[:MAX_LENGTH]}}]}
 
 
 def get_rich_text(content):
-    return {"rich_text": [{"type": "text", "text": {"content": content}}]}
+    return {"rich_text": [{"type": "text", "text": {"content": content[:MAX_LENGTH]}}]}
 
 
 def get_url(url):
@@ -84,7 +85,7 @@ def get_quote(content):
             "rich_text": [
                 {
                     "type": "text",
-                    "text": {"content": content},
+                    "text": {"content": content[:MAX_LENGTH]},
                 }
             ],
             "color": "default",
@@ -121,7 +122,7 @@ def get_callout(content, style, colorStyle, reviewId):
                 {
                     "type": "text",
                     "text": {
-                        "content": content,
+                        "content": content[:MAX_LENGTH],
                     },
                 }
             ],
