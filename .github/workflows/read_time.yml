@@ -37,7 +37,7 @@ jobs:
           pip install -r requirements.txt
       - name: weread heatmap
         run: |
-          github_heatmap weread  --weread_cookie "${{secrets.WEREAD_COOKIE}}" --year $(date +"%Y") --me "${{secrets.NAME}}" --with-animation --background-color=#ffffff --track-color=#ACE7AE --special-color1=#69C16E --special-color2=#549F57 --dom-color=#EBEDF0 --text-color=#000000
+          github_heatmap weread  --weread_cookie "${{secrets.WEREAD_COOKIE}}" --year 2018-$(date +"%Y") --me "${{secrets.NAME}}" --with-animation --background-color=#ffffff --track-color=#ACE7AE --special-color1=#69C16E --special-color2=#549F57 --dom-color=#EBEDF0 --text-color=#000000
       - name: push
         run: |
           git config --local user.email "action@github.com"
