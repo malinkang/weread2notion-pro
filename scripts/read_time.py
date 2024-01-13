@@ -1,6 +1,7 @@
 import argparse
 from datetime import datetime
 from datetime import timedelta
+import json
 import os
 import time
 
@@ -58,7 +59,6 @@ if __name__ == "__main__":
     weread_cookie = os.getenv("WEREAD_COOKIE")
     notion_helper = NotionHelper()
     weread_api = WeReadApi()
-    old_image_file  = "./OUT_FOLDER/weread.svg"
     image_file = get_file()
     if image_file:
         image_url = notion_helper.image_dict.get("url")
@@ -69,18 +69,19 @@ if __name__ == "__main__":
         if(image_url and block_id):
             notion_helper.update_image_block_link(block_id,new_image_url)
     api_data = weread_api.get_api_data()
+    readTimes = {int(key):value for key,value in api_data.get("readTimes").items()}
     now = pendulum.now('Asia/Shanghai').start_of('day')
     today_timestamp = now.int_timestamp
-    if(today_timestamp not in api_data):
-        api_data["readTimes"][str(today_timestamp)] = 0
-    readTimes = dict(sorted(api_data["readTimes"].items()))
+    if(today_timestamp not in readTimes):
+        readTimes[today_timestamp] = 0
+    readTimes = dict(sorted(readTimes.items()))
     results =  notion_helper.query_all(database_id=notion_helper.day_database_id)
     for result in results:
         timestamp = result.get("properties").get("时间戳").get("number")
         duration = result.get("properties").get("时长").get("number")
         id = result.get("id")
-        if(str(timestamp) in readTimes):
-            value = readTimes.pop(str(timestamp))
+        if(timestamp in readTimes):
+            value = readTimes.pop(timestamp)
             if(value !=duration):
                 insert_to_notion(page_id=id,timestamp=timestamp,duration=value)
     for key,value in readTimes.items():
