@@ -27,6 +27,7 @@ jobs:
       DAY_DATABASE_NAME: ${{ vars.DAY_DATABASE_NAME }}
       REF: ${{ github.ref }}
       REPOSITORY: ${{ github.repository }}
+      YEAR: ${{ vars.YEAR }}
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -38,17 +39,27 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
+      - name: Remove folder
+        run: rm -rf ./OUT_FOLDER
+      - name: Set default year if not provided
+        run: echo "YEAR=$(date +"%Y")" >> $GITHUB_ENV
+        if: env.YEAR == ''
       - name: weread heatmap
         run: |
-          github_heatmap weread  --weread_cookie "${{secrets.WEREAD_COOKIE}}" --year $(date +"%Y") --me "${{secrets.NAME}}" --with-animation --background-color=#ffffff --track-color=#ACE7AE --special-color1=#69C16E --special-color2=#549F57 --dom-color=#EBEDF0 --text-color=#000000
+          github_heatmap weread  --weread_cookie "${{secrets.WEREAD_COOKIE}}" --year $YEAR  --me "${{secrets.NAME}}" --with-animation --background-color=${{ vars.background_color||'#FFFFFF'}} --track-color=${{ vars.track_color||'#ACE7AE'}} --special-color1=${{ vars.special_color||'#69C16E'}} --special-color2=${{ vars.special_color2||'#549F57'}} --dom-color=${{ vars.dom_color||'#EBEDF0'}} --text-color=${{ vars.text_color||'#000000'}}
+      - name: Rename weread.svg to a random name
+        run: |
+          RANDOM_FILENAME=$(uuidgen).svg
+          mv ./OUT_FOLDER/weread.svg ./OUT_FOLDER/$RANDOM_FILENAME
+          echo "Renamed file to $RANDOM_FILENAME"
       - name: push
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
           git add .
-          git commit -m 'add new cover' || echo "nothing to commit"
+          git commit -m '生成热力图' || echo "nothing to commit"
           git push || echo "nothing to push"
       - name: read time sync
         run: |
           python -u scripts/read_time.py
-  
+
