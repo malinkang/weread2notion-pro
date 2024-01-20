@@ -1,7 +1,25 @@
 import calendar
 from datetime import datetime
 from datetime import timedelta
-MAX_LENGTH = 1024  # NOTION 2000个字符限制https://developers.notion.com/reference/request-limits
+import hashlib
+import re
+from config import (
+    RICH_TEXT,
+    URL,
+    RELATION,
+    NUMBER,
+    DATE,
+    FILES,
+    STATUS,
+    TITLE,
+    SELECT,
+)
+import pendulum
+
+MAX_LENGTH = (
+    1024  # NOTION 2000个字符限制https://developers.notion.com/reference/request-limits
+)
+
 
 def get_heading(level, content):
     if level == 1:
@@ -56,11 +74,11 @@ def get_relation(ids):
     return {"relation": [{"id": id} for id in ids]}
 
 
-def get_date(start,end=None):
+def get_date(start, end=None):
     return {
         "date": {
             "start": start,
-            "end":end,
+            "end": end,
             "time_zone": "Asia/Shanghai",
         }
     }
@@ -151,7 +169,8 @@ def format_time(time):
         result += f"{minutes}分"
     return result
 
-def format_date(date,format="%Y-%m-%d %H:%M:%S"):
+
+def format_date(date, format="%Y-%m-%d %H:%M:%S"):
     return date.strftime(format)
 
 
@@ -193,3 +212,123 @@ def get_first_and_last_day_of_week(date):
     last_day_of_week = first_day_of_week + timedelta(days=6)
 
     return first_day_of_week, last_day_of_week
+
+
+def get_properties(dict1, dict2, dict3):
+    properties = {}
+    for key, value in dict2.items():
+        property_type = dict3.get(value)
+        property_value = dict1.get(key)
+        if property_value == None:
+            continue
+        property = None
+        if property_type == TITLE:
+            property = {
+                "title": [
+                    {"type": "text", "text": {"content": property_value[:MAX_LENGTH]}}
+                ]
+            }
+        elif property_type == RICH_TEXT:
+            property = {
+                "rich_text": [
+                    {"type": "text", "text": {"content": property_value[:MAX_LENGTH]}}
+                ]
+            }
+        elif property_type == NUMBER:
+            property = {"number": property_value}
+        elif property_type == STATUS:
+            property = {"status": {"name": property_value}}
+        elif property_type == FILES:
+            property = {"files": [{"type": "external", "name": "Cover", "external": {"url": property_value}}]}
+        elif property_type == DATE:
+            property = {
+                "date": {
+                    "start": pendulum.from_timestamp(
+                        property_value, tz="Asia/Shanghai"
+                    ).to_datetime_string(),
+                    "time_zone": "Asia/Shanghai",
+                }
+            }
+        elif property_type==URL:
+            property = {"url": property_value}        
+        elif property_type==SELECT:
+            property = {"select": {"name": property_value}}
+        elif property_type == RELATION:
+            property = {"relation": [{"id": id} for id in property_value]}
+        if property:
+            properties[value] = property
+    return properties
+
+
+def get_property_value(property):
+    """从Property中获取值"""
+    type = property.get("type")
+    content = property.get(type)
+    if content is None:
+        return None
+    if type == "title" or type == "rich_text":
+        if(len(content)>0):
+            return content[0].get("plain_text")
+        else:
+            return None
+    elif type == "status" or type == "select":
+        return content.get("name")
+    elif type == "files":
+        # 不考虑多文件情况
+        if len(content) > 0 and content[0].get("type") == "external":
+            return content[0].get("external").get("url")
+        else:
+            return None
+    elif type == "date":
+        return str_to_timestamp(content.get("start"))
+    else:
+        return content
+
+
+def calculate_book_str_id(book_id):
+    md5 = hashlib.md5()
+    md5.update(book_id.encode("utf-8"))
+    digest = md5.hexdigest()
+    result = digest[0:3]
+    code, transformed_ids = transform_id(book_id)
+    result += code + "2" + digest[-2:]
+
+    for i in range(len(transformed_ids)):
+        hex_length_str = format(len(transformed_ids[i]), "x")
+        if len(hex_length_str) == 1:
+            hex_length_str = "0" + hex_length_str
+
+        result += hex_length_str + transformed_ids[i]
+
+        if i < len(transformed_ids) - 1:
+            result += "g"
+
+    if len(result) < 20:
+        result += digest[0 : 20 - len(result)]
+    md5 = hashlib.md5()
+    md5.update(result.encode("utf-8"))
+    result += md5.hexdigest()[0:3]
+    return result
+
+def transform_id(book_id):
+    id_length = len(book_id)
+    if re.match("^\d*$", book_id):
+        ary = []
+        for i in range(0, id_length, 9):
+            ary.append(format(int(book_id[i : min(i + 9, id_length)]), "x"))
+        return "3", ary
+
+    result = ""
+    for i in range(id_length):
+        result += format(ord(book_id[i]), "x")
+    return "4", [result]
+
+def get_weread_url(book_id):
+    return f"https://weread.qq.com/web/reader/{calculate_book_str_id(book_id)}"
+
+def str_to_timestamp(date):
+    if date == None:
+        return 0
+    dt = pendulum.parse(date)
+    # 获取时间戳
+    return int(dt.timestamp())

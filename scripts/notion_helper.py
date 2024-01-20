@@ -19,6 +19,7 @@ from utils import (
     get_rich_text,
     get_title,
     timestamp_to_date,
+    get_property_value,
 )
 
 TAG_ICON_URL = "https://www.notion.so/icons/tag_gray.svg"
@@ -59,6 +60,7 @@ class NotionHelper:
         self.category_database_id = self.database_id_dict.get(self.database_name_dict.get("CATEGORY_DATABASE_NAME"))
         self.author_database_id = self.database_id_dict.get(self.database_name_dict.get("AUTHOR_DATABASE_NAME"))
         self.chapter_database_id = self.database_id_dict.get(self.database_name_dict.get("CHAPTER_DATABASE_NAME"))
+        self.update_book_database()
 
     def extract_page_id(self,notion_url):
         # 正则表达式匹配 32 个字符的 Notion page_id
@@ -81,6 +83,28 @@ class NotionHelper:
             # 如果子块有子块，递归调用函数
             if "has_children" in child and child["has_children"]:
                 self.search_database(child["id"])
+
+    def update_book_database(self):
+        """更新数据库"""
+        response = self.client.databases.retrieve(
+            database_id=self.book_database_id
+        )
+        id = response.get("id")
+        properties = response.get("properties")
+        update_properties = {}
+        if properties.get("阅读时长") is None or properties.get("阅读时长").get("type") != "number":
+            update_properties["阅读时长"] = {"number": {}}
+        if properties.get("书架分类") is None or properties.get("书架分类").get("type") != "select":
+            update_properties["书架分类"] = {"select": {}}
+        if properties.get("豆瓣链接") is None or properties.get("豆瓣链接").get("type") != "url":
+            update_properties["豆瓣链接"] = {"url": {}}
+        """NeoDB先不添加了，现在受众还不光，可能有的小伙伴不知道是干什么的"""
+        # if properties.get("NeoDB链接") is None or properties.get("NeoDB链接").get("type") != "url":
+        #     update_properties["NeoDB链接"] = {"url": {}}
+        if len(update_properties) > 0:
+            self.client.databases.update(
+                database_id=id, properties=update_properties
+            )
 
     def update_image_block_link(self,block_id, new_image_url):
         # 更新 image block 的链接
@@ -228,6 +252,12 @@ class NotionHelper:
         self.create_page(parent, properties, icon)
 
     @retry(stop_max_attempt_number=3, wait_fixed=5000)
+    def update_book_page(self, page_id, properties):
+        return self.client.pages.update(
+            page_id=page_id, properties=properties
+        )
+
+    @retry(stop_max_attempt_number=3, wait_fixed=5000)
     def update_page(self, page_id, properties, icon):
         return self.client.pages.update(
             page_id=page_id, icon=icon, properties=properties
@@ -262,6 +292,23 @@ class NotionHelper:
         return self.client.blocks.delete(block_id=block_id)
     
     @retry(stop_max_attempt_number=3, wait_fixed=5000)
+    def get_all_book(self):
+        """从Notion中获取所有的书籍"""
+        results = self.query_all(self.book_database_id)
+        books_dict = {}
+        for result in results:
+            bookId = get_property_value(result.get("properties").get("BookId"))
+            books_dict[bookId] = {
+                "pageId": result.get("id"),
+                "readingTime": get_property_value(result.get("properties").get("阅读时长")) ,
+                "category": get_property_value(result.get("properties").get("书架分类")) ,
+                "Sort": get_property_value(result.get("properties").get("Sort")) ,
+                "douban_url": get_property_value(result.get("properties").get("豆瓣链接")) ,
+            }
+        return books_dict
+
+    
+    @retry(stop_max_attempt_number=3, wait_fixed=5000)
     def query_all_by_book(self,database_id,filter):
         results = []
         has_more = True
@@ -277,7 +324,6 @@ class NotionHelper:
             has_more = response.get("has_more")
             results.extend(response.get("results"))
         return results
-    
     @retry(stop_max_attempt_number=3, wait_fixed=5000)
     def query_all(self, database_id):
         """获取database中所有的数据"""

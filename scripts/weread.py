@@ -1,41 +1,19 @@
 import argparse
-import json
-import logging
 import os
-import re
-import time
-from notion_client import Client
 import requests
 
-from datetime import datetime, timedelta
-import hashlib
 from notion_helper import NotionHelper
 from weread_api import WeReadApi
 
 from utils import (
-    format_date,
-    format_time,
     get_callout,
-    get_date,
-    get_file,
     get_heading,
-    get_icon,
     get_number,
     get_number_from_result,
     get_quote,
-    get_relation,
-    get_rich_text,
     get_rich_text_from_result,
     get_table_of_contents,
-    get_title,
-    get_url,
 )
-
-
-TAG_ICON_URL = "https://www.notion.so/icons/tag_gray.svg"
-USER_ICON_URL = "https://www.notion.so/icons/user-circle-filled_gray.svg"
-TARGET_ICON_URL = "https://www.notion.so/icons/target_red.svg"
-BOOKMARK_ICON_URL = "https://www.notion.so/icons/bookmark_gray.svg"
 
 
 def get_bookmark_list(page_id, bookId):
@@ -91,96 +69,6 @@ def check(bookId):
     if len(response["results"]) > 0:
         return response["results"][0]["id"]
     return None
-
-
-def insert_book_to_notion(
-    page_id, bookName, bookId, cover, author, isbn, rating, categories, sort
-):
-    """插入到notion"""
-    parent = {"database_id": notion_helper.book_database_id, "type": "database_id"}
-    properties = {
-        "书名": get_title(bookName),
-        "BookId": get_rich_text(bookId),
-        "ISBN": get_rich_text(isbn),
-        "链接": get_url(weread_api.get_url(bookId)),
-        "作者": get_relation(
-            [
-                notion_helper.get_relation_id(
-                    x, notion_helper.author_database_id, USER_ICON_URL
-                )
-                for x in author.split(" ")
-            ]
-        ),
-        "Sort": get_number(sort),
-        "评分": get_number(rating),
-        "封面": get_file(cover),
-    }
-    if categories != None:
-        properties["分类"] = get_relation(
-            [
-                notion_helper.get_relation_id(
-                    x, notion_helper.category_database_id, TAG_ICON_URL
-                )
-                for x in categories
-            ]
-        )
-    read_info = weread_api.get_read_info(bookId=bookId)
-    if read_info != None:
-        markedStatus = read_info.get("markedStatus", 0)
-        readingTime = format_time(read_info.get("readingTime", 0))
-        readingProgress = (
-            100 if (markedStatus == 4) else read_info.get("readingProgress", 0)
-        )
-        totalReadDay = read_info.get("totalReadDay", 0)
-        properties["阅读状态"] = {"status": {"name": "已读" if markedStatus == 4 else "在读"}}
-        properties["阅读时长"] = get_rich_text(readingTime)
-        properties["阅读进度"] = {"number": readingProgress / 100}
-        properties["阅读天数"] = {"number": totalReadDay}
-        finishedDate = int(datetime.timestamp(datetime.now()))
-        if "finishedDate" in read_info:
-            finishedDate = read_info.get("finishedDate")
-        elif "readDetail" in read_info:
-            if "lastReadingDate" in read_info.get("readDetail"):
-                finishedDate = read_info.get("readDetail").get("lastReadingDate")
-                lastReadingDate = datetime.utcfromtimestamp(
-                    read_info.get("readDetail").get("lastReadingDate")
-                ) + timedelta(hours=8)
-                properties["最后阅读时间"] = get_date(
-                    lastReadingDate.strftime("%Y-%m-%d %H:%M:%S")
-                )
-        elif "readingBookDate" in read_info:
-            finishedDate = read_info.get("readingBookDate")
-        finishedDate = datetime.utcfromtimestamp(finishedDate) + timedelta(hours=8)
-        properties["时间"] = get_date(finishedDate.strftime("%Y-%m-%d %H:%M:%S"))
-        if "readDetail" in read_info and "beginReadingDate" in read_info.get(
-            "readDetail"
-        ):
-            lastReadingDate = datetime.utcfromtimestamp(
-                read_info.get("readDetail").get("beginReadingDate")
-            ) + timedelta(hours=8)
-            properties["开始阅读时间"] = get_date(
-                lastReadingDate.strftime("%Y-%m-%d %H:%M:%S")
-            )
- 
-        if (
-            read_info.get("bookInfo") != None
-            and read_info.get("bookInfo").get("intro") != None
-        ):
-            properties["简介"] = get_rich_text(read_info.get("bookInfo").get("intro"))
-        notion_helper.get_date_relation(properties,finishedDate)
-    if cover.startswith("http"):
-        icon = get_icon(cover)
-    else:
-        icon = get_icon(BOOKMARK_ICON_URL)
-    # notion api 限制100个block
-    if page_id == None:
-        response = notion_helper.create_page(
-            parent=parent, icon=icon, properties=properties
-        )
-        page_id = response["id"]
-    else:
-        notion_helper.update_page(page_id=page_id, icon=icon, properties=properties)
-    return page_id
 
 
 def get_sort():
@@ -364,37 +252,27 @@ if __name__ == "__main__":
     repository =  os.getenv("REPOSITORY")
     weread_api = WeReadApi()
     notion_helper = NotionHelper()
-    latest_sort = get_sort()
+    notion_books = notion_helper.get_all_book()
     books = weread_api.get_notebooklist()
+    print(len(books))
     if books != None:
         for index, book in enumerate(books):
-            sort = book.get("sort")
-            if sort <= latest_sort:
-                continue
-            book = book.get("book")
-            title = book.get("title")
-            cover = book.get("cover")
-            if book.get("author") == "公众号" and book.get("cover").endswith("/0"):
-                cover += ".jpg"
-            if cover.startswith("http") and not cover.endswith(".jpg"):
-                path = download_image(cover)
-                cover = (
-                    f"https://raw.githubusercontent.com/{repository}/{branch}/{path}"
-                )
             bookId = book.get("bookId")
-            author = book.get("author")
-            categories = book.get("categories")
-            if categories != None:
-                categories = [x["title"] for x in categories]
-            print(f"正在同步《{title}》,一共{len(books)}本，当前是第{index+1}本。")
-            page_id = check(bookId)
-            isbn, rating = weread_api.get_bookinfo(bookId)
-            page_id = insert_book_to_notion(
-                page_id, title, bookId, cover, author, isbn, rating, categories, sort
-            )
+            title = book.get("book").get("title")
+            sort = book.get("sort")
+            if bookId not in notion_books:
+                continue
+            if sort == notion_books.get(bookId).get("Sort"):
+                continue
+            pageId = notion_books.get(bookId).get("pageId")
+            print(f"正在同步《{title}》,一共{len(books)}本，当前是第{index+1}本。{pageId}")
             chapter = weread_api.get_chapter_info(bookId)
-            bookmark_list = get_bookmark_list(page_id, bookId)
-            reviews = get_review_list(page_id,bookId)
+            bookmark_list = get_bookmark_list(pageId, bookId)
+            reviews = get_review_list(pageId,bookId)
             bookmark_list.extend(reviews)
-            content = sort_notes(page_id, chapter, bookmark_list)
-            append_blocks(page_id, content)
+            content = sort_notes(pageId, chapter, bookmark_list)
+            append_blocks(pageId, content)
+            properties = {
+                "Sort":get_number(sort)
+            }
+            notion_helper.update_book_page(page_id=pageId,properties=properties)

@@ -30,7 +30,6 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v3
-
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
@@ -39,13 +38,9 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
+      - name: weread book sync
+        run: |
+          python -u scripts/book.py
       - name: weread sync
         run: |
           python -u scripts/weread.py
-      - name: push
-        run: |
-          git config --local user.email "action@github.com"
-          git config --local user.name "GitHub Action"
-          git add .
-          git commit -m 'add new cover' || echo "nothing to commit"
-          git push || echo "nothing to push"
