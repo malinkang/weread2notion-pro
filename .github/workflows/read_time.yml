@@ -63,5 +63,5 @@ jobs:
           git push origin output -f || echo "nothing to push"
       - name: read time sync
         run: |
+          git checkout main
           python -u scripts/read_time.py
-
