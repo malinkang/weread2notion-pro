@@ -55,7 +55,7 @@ jobs:
       - name: push
         run: |
           git checkout --orphan output
-          git rm -rf .
+          git reset
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
           git add ./OUT_FOLDER
@@ -63,5 +63,4 @@ jobs:
           git push origin output -f || echo "nothing to push"
       - name: read time sync
         run: |
-          git checkout main
           python -u scripts/read_time.py
