@@ -52,15 +52,6 @@ jobs:
           RANDOM_FILENAME=$(uuidgen).svg
           mv ./OUT_FOLDER/weread.svg ./OUT_FOLDER/$RANDOM_FILENAME
           echo "Renamed file to $RANDOM_FILENAME"
-      - name: push
-        run: |
-          git checkout --orphan output
-          git reset
-          git config --local user.email "action@github.com"
-          git config --local user.name "GitHub Action"
-          git add ./OUT_FOLDER
-          git commit -m '生成热力图' || echo "nothing to commit"
-          git push origin output -f || echo "nothing to push"
       - name: read time sync
         run: |
           python -u scripts/read_time.py
