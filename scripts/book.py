@@ -47,8 +47,13 @@ def insert_book_to_notion(books, index, bookId):
     book["readingProgress"] = (
         100 if (book.get("markedStatus") == 4) else book.get("readingProgress", 0)
     ) / 100
-    status = {1: "想读", 4: "已读"}
-    book["status"] = status.get(book.get("markedStatus"), "在读")
+    markedStatus = book.get("markedStatus") 
+    status = "想读"
+    if(markedStatus==4):
+        status = "已读"
+    elif(book.get("readingTime",0)>=60):
+        status = "在读"
+    book["status"] = status
     date = None
     if book.get("finishedDate"):
         date = book.get("finishedDate")
