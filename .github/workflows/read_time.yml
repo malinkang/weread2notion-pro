@@ -54,12 +54,13 @@ jobs:
           echo "Renamed file to $RANDOM_FILENAME"
       - name: push
         run: |
+          git checkout --orphan output
+          git reset
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
-          git add .
+          git add ./OUT_FOLDER
           git commit -m '生成热力图' || echo "nothing to commit"
-          git push || echo "nothing to push"
+          git push origin output -f || echo "nothing to push"
       - name: read time sync
         run: |
           python -u scripts/read_time.py
-
