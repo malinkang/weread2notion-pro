@@ -9,7 +9,7 @@ import pendulum
 
 from notion_helper import NotionHelper
 from weread_api import WeReadApi
-from utils import format_date, get_date, get_icon, get_number, get_relation, get_title
+from utils import format_date, get_date, get_icon, get_number, get_relation, get_title,upload_image
 
 def insert_to_notion(page_id,timestamp,duration):
     parent = {"database_id": notion_helper.day_database_id, "type": "database_id"}
@@ -61,12 +61,10 @@ if __name__ == "__main__":
     weread_api = WeReadApi()
     image_file = get_file()
     if image_file:
-        image_url = notion_helper.image_dict.get("url")
+        image_url = upload_image(f"heatmap/{os.getenv('REPOSITORY').split('/')[0]}",image_file,f"./OUT_FOLDER/{image_file}")
         block_id = notion_helper.image_dict.get("id")
-        repository =  os.getenv("REPOSITORY")
-        new_image_url = f"https://raw.githubusercontent.com/{repository}/output/OUT_FOLDER/{image_file}"
         if(image_url and block_id):
-            notion_helper.update_image_block_link(block_id,new_image_url)
+            notion_helper.update_image_block_link(block_id,image_url)
     api_data = weread_api.get_api_data()
     readTimes = {int(key):value for key,value in api_data.get("readTimes").items()}
     now = pendulum.now('Asia/Shanghai').start_of('day')
