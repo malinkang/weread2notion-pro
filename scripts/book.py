@@ -20,6 +20,28 @@ TAG_ICON_URL = "https://www.notion.so/icons/tag_gray.svg"
 USER_ICON_URL = "https://www.notion.so/icons/user-circle-filled_gray.svg"
 BOOK_ICON_URL = "https://www.notion.so/icons/book_gray.svg"
 
+@retry(stop_max_attempt_number=3, wait_fixed=5000)
+def get_douban_url(isbn):
+    print(f"get_douban_url {isbn} ")
+    params = {"query": isbn, "page": "1", "category": "book"}
+    r = requests.get("https://neodb.social/api/catalog/search", params=params)
+    books = r.json().get("data")
+    if books is None or len(books) == 0:
+        return None
+    results = list(filter(lambda x: x.get("isbn") == isbn, books))
+    if len(results) == 0:
+        return None
+    result = results[0]
+    urls = list(
+        filter(
+            lambda x: x.get("url").startswith("https://book.douban.com"),
+            result.get("external_resources", []),
+        )
+    )
+    if len(urls) == 0:
+        return None
+    return urls[0].get("url")
+
 def insert_book_to_notion(books, index, bookId):
     """插入Book到Notion"""
     book = {}
@@ -43,6 +65,11 @@ def insert_book_to_notion(books, index, bookId):
             cover = cover.replace("/s_", "/t7_")
     else:
         cover = BOOK_ICON_URL
+    isbn = book.get("isbn")
+    if isbn and isbn.strip():
+        douban_url = get_douban_url(isbn)
+        if douban_url:
+            book["douban_url"] = douban_url
     book["cover"] = cover
     book["readingProgress"] = (
         100 if (book.get("markedStatus") == 4) else book.get("readingProgress", 0)
@@ -77,6 +104,9 @@ def insert_book_to_notion(books, index, bookId):
                 )
                 for x in book.get("categories")
         ]
+    else:
+        book.pop("categories",None)
+        book.pop("author",None)
     properties = utils.get_properties(
         book, book_properties_name_dict, book_properties_type_dict
     )
