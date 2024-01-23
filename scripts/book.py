@@ -63,8 +63,12 @@ def douban_book_parse(link):
     response = requests.get(link, headers=headers)
     soup = BeautifulSoup(response.content)
     result = {}
-    result["title"] = soup.find(property="v:itemreviewed").string
-    result["cover"] = soup.find(id="mainpic").img["src"]
+    title = soup.find(property="v:itemreviewed")
+    if title:
+        result["title"] = soup.find(property="v:itemreviewed").string
+    mainpic = soup.find(id="mainpic")
+    if mainpic:
+        result["cover"] = mainpic.img["src"]
     authors = soup.find_all("li", class_="author")
     authors = [
         author.find("a", class_="name").string
@@ -73,9 +77,10 @@ def douban_book_parse(link):
     ]
     result["author"] = authors
     info = soup.find(id="info")
-    info = list(map(lambda x: x.replace(":", "").strip(), info.stripped_strings))
-    if "ISBN" in info:
-        result["isbn"] = info[info.index("ISBN") + 1 :][0]
+    if info:
+        info = list(map(lambda x: x.replace(":", "").strip(), info.stripped_strings))
+        if "ISBN" in info:
+            result["isbn"] = info[info.index("ISBN") + 1 :][0]
     return result
 
 
@@ -99,8 +104,8 @@ def insert_book_to_notion(books, index, bookId):
     if author == "公众号":
         if not cover.startswith("http"):
             book["cover"] = BOOK_ICON_URL
-        if cover.startswith("http") and not cover.endswith(".jpg"):
-            book["cover"] = f"{cover}.jpg"
+        if cover.startswith("http"):
+            book["cover"] = utils.upload_cover(cover)
         book["author"] = ["公众号"]
     douban_url = book.get("douban_url")
     """不是公众号并且douban链接为None"""
@@ -116,17 +121,28 @@ def insert_book_to_notion(books, index, bookId):
         if not isbn or not isbn.strip():
             book["isbn"] = douban_book.get("isbn")
         """微信读书的作者名有点恶心，从豆瓣取了"""
-        book["author"] = douban_book.get("author")
+        book["author"] = (
+            douban_book.get("author")
+            if len(douban_book.get("author")) > 0
+            else author.split(" ")
+        )
         """自己传的书获取的封面Notion不能展示用douban的封面吧"""
         if cover.startswith("http") and not cover.endswith(".jpg"):
-            book["cover"] = douban_book.get("cover")
+            book["cover"] = (
+                douban_book.get("cover")
+                if douban_book.get("cover")
+                else utils.upload_cover(cover)
+            )
         else:
             """替换为高清图"""
             book["cover"] = book.get("cover").replace("/s_", "/t7_")
     elif author != "公众号":
-        book["author"] = book.get("author").split(" ")
+        book["author"] = author.split(" ")
         """替换为高清图"""
-        book["cover"] = book.get("cover").replace("/s_", "/t7_")
+        if cover.endswith("parsecover"):
+            book["cover"] = utils.upload_cover(cover)
+        else:
+            book["cover"] = book.get("cover").replace("/s_", "/t7_")
     book["readingProgress"] = (
         100 if (book.get("markedStatus") == 4) else book.get("readingProgress", 0)
     ) / 100
@@ -198,9 +214,14 @@ if __name__ == "__main__":
     not_need_sync = []
     for key, value in notion_books.items():
         if (
-            key not in bookProgress
-            or value.get("readingTime") == bookProgress.get(key).get("readingTime")
-        ) and archive_dict.get(key) == value.get("category"):
+            (
+                key not in bookProgress
+                or value.get("readingTime") == bookProgress.get(key).get("readingTime")
+            )
+            and (archive_dict.get(key) == value.get("category"))
+            and (not value.get("cover").endswith("/0.jpg"))
+            and (not value.get("cover").endswith("parsecover"))
+        ):
             not_need_sync.append(key)
     notebooks = weread_api.get_notebooklist()
     notebooks = [d["bookId"] for d in notebooks if "bookId" in d]
