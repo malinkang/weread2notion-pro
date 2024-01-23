@@ -304,6 +304,7 @@ class NotionHelper:
                 "category": get_property_value(result.get("properties").get("书架分类")) ,
                 "Sort": get_property_value(result.get("properties").get("Sort")) ,
                 "douban_url": get_property_value(result.get("properties").get("豆瓣链接")) ,
+                "cover": get_property_value(result.get("properties").get("封面")) ,
             }
         return books_dict
 
