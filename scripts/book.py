@@ -219,6 +219,7 @@ if __name__ == "__main__":
                 or value.get("readingTime") == bookProgress.get(key).get("readingTime")
             )
             and (archive_dict.get(key) == value.get("category"))
+            and value.get("cover")
             and (not value.get("cover").endswith("/0.jpg"))
             and (not value.get("cover").endswith("parsecover"))
         ):
