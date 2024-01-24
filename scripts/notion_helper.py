@@ -190,7 +190,7 @@ class NotionHelper:
     def insert_bookmark(self, id, bookmark):
         icon = get_icon(BOOKMARK_ICON_URL)
         properties = {
-            "Name": get_title(bookmark.get("markText")),
+            "Name": get_title(bookmark.get("markText","")),
             "bookId": get_rich_text(bookmark.get("bookId")),
             "range": get_rich_text(bookmark.get("range")),
             "bookmarkId": get_rich_text(bookmark.get("bookmarkId")),
@@ -213,7 +213,7 @@ class NotionHelper:
         time.sleep(0.1)
         icon = get_icon(TAG_ICON_URL)
         properties = {
-            "Name": get_title(review.get("content")),
+            "Name": get_title(review.get("content","")),
             "bookId": get_rich_text(review.get("bookId")),
             "reviewId": get_rich_text(review.get("reviewId")),
             "blockId": get_rich_text(review.get("blockId")),

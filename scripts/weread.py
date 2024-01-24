@@ -211,14 +211,14 @@ def append_blocks(id, contents):
 def content_to_block(content):
     if "bookmarkId" in content:
         return get_callout(
-            content.get("markText"),
+            content.get("markText",""),
             content.get("style"),
             content.get("colorStyle"),
             content.get("reviewId"),
         )
     elif "reviewId" in content:
         return get_callout(
-            content.get("content"),
+            content.get("content",""),
             content.get("style"),
             content.get("colorStyle"),
             content.get("reviewId"),
