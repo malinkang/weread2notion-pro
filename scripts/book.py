@@ -85,7 +85,10 @@ def insert_book_to_notion(books, index, bookId):
     book["阅读时长"] = book.get("readingTime")
     book["阅读天数"] = book.get("totalReadDay")
     book["评分"] = book.get("newRating")
+    print(book.get("newRatingDetail"))
+    print(book.get("newRatingDetail").get("myRating"))
     if book.get("newRatingDetail") and book.get("newRatingDetail").get("myRating"):
+        print("我的评分 "+book.get("newRatingDetail").get("myRating"))
         book["我的评分"] = rating.get(book.get("newRatingDetail").get("myRating"))
     date = None
     if book.get("finishedDate"):
