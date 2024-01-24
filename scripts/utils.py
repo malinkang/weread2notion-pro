@@ -217,49 +217,48 @@ def get_first_and_last_day_of_week(date):
     return first_day_of_week, last_day_of_week
 
 
-def get_properties(dict1, dict2, dict3):
+def get_properties(dict1, dict2):
     properties = {}
-    for key, value in dict2.items():
-        property_type = dict3.get(value)
-        property_value = dict1.get(key)
-        if property_value == None:
+    for key, value in dict1.items():
+        type = dict2.get(key)
+        if value == None:
             continue
         property = None
-        if property_type == TITLE:
+        if type == TITLE:
             property = {
                 "title": [
-                    {"type": "text", "text": {"content": property_value[:MAX_LENGTH]}}
+                    {"type": "text", "text": {"content": value[:MAX_LENGTH]}}
                 ]
             }
-        elif property_type == RICH_TEXT:
+        elif type == RICH_TEXT:
             property = {
                 "rich_text": [
-                    {"type": "text", "text": {"content": property_value[:MAX_LENGTH]}}
+                    {"type": "text", "text": {"content": value[:MAX_LENGTH]}}
                 ]
             }
-        elif property_type == NUMBER:
-            property = {"number": property_value}
-        elif property_type == STATUS:
-            property = {"status": {"name": property_value}}
-        elif property_type == FILES:
-            property = {"files": [{"type": "external", "name": "Cover", "external": {"url": property_value}}]}
-        elif property_type == DATE:
+        elif type == NUMBER:
+            property = {"number": value}
+        elif type == STATUS:
+            property = {"status": {"name": value}}
+        elif type == FILES:
+            property = {"files": [{"type": "external", "name": "Cover", "external": {"url": value}}]}
+        elif type == DATE:
             property = {
                 "date": {
                     "start": pendulum.from_timestamp(
-                        property_value, tz="Asia/Shanghai"
+                        value, tz="Asia/Shanghai"
                     ).to_datetime_string(),
                     "time_zone": "Asia/Shanghai",
                 }
             }
-        elif property_type==URL:
-            property = {"url": property_value}        
-        elif property_type==SELECT:
-            property = {"select": {"name": property_value}}
-        elif property_type == RELATION:
-            property = {"relation": [{"id": id} for id in property_value]}
+        elif type==URL:
+            property = {"url": value}        
+        elif type==SELECT:
+            property = {"select": {"name": value}}
+        elif type == RELATION:
+            property = {"relation": [{"id": id} for id in value]}
         if property:
-            properties[value] = property
+            properties[key] = property
     return properties
 
 

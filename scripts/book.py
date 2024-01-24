@@ -10,15 +10,16 @@ from notion_helper import NotionHelper
 from weread_api import WeReadApi
 import utils
 from config import (
-    book_properties_name_dict,
     book_properties_type_dict,
 )
-from bs4 import BeautifulSoup
 from retrying import retry
 
 TAG_ICON_URL = "https://www.notion.so/icons/tag_gray.svg"
 USER_ICON_URL = "https://www.notion.so/icons/user-circle-filled_gray.svg"
 BOOK_ICON_URL = "https://www.notion.so/icons/book_gray.svg"
+
+rating = {"poor": "⭐️", "fair": "⭐️⭐️⭐️", "good": "⭐️⭐️⭐️⭐️⭐️"}
+
 
 @retry(stop_max_attempt_number=3, wait_fixed=5000)
 def get_douban_url(isbn):
@@ -46,7 +47,7 @@ def insert_book_to_notion(books, index, bookId):
     """插入Book到Notion"""
     book = {}
     if bookId in archive_dict:
-        book["archive"] = archive_dict.get(bookId)
+        book["书架分类"] = archive_dict.get(bookId)
     if bookId in notion_books:
         book.update(notion_books.get(bookId))
     bookInfo = weread_api.get_bookinfo(bookId)
@@ -70,17 +71,22 @@ def insert_book_to_notion(books, index, bookId):
         douban_url = get_douban_url(isbn)
         if douban_url:
             book["douban_url"] = douban_url
-    book["cover"] = cover
-    book["readingProgress"] = (
+    book["封面"] = cover
+    book["阅读进度"] = (
         100 if (book.get("markedStatus") == 4) else book.get("readingProgress", 0)
     ) / 100
-    markedStatus = book.get("markedStatus") 
+    markedStatus = book.get("markedStatus")
     status = "想读"
-    if(markedStatus==4):
+    if markedStatus == 4:
         status = "已读"
-    elif(book.get("readingTime",0)>=60):
+    elif book.get("readingTime", 0) >= 60:
         status = "在读"
-    book["status"] = status
+    book["阅读状态"] = status
+    book["阅读时长"] = book.get("readingTime")
+    book["阅读天数"] = book.get("totalReadDay")
+    book["评分"] = book.get("newRating")
+    if book.get("newRatingDetail") and book.get("newRatingDetail").get("myRating"):
+        book["我的评分"] = rating.get(book.get("newRatingDetail").get("myRating"))
     date = None
     if book.get("finishedDate"):
         date = book.get("finishedDate")
@@ -88,33 +94,35 @@ def insert_book_to_notion(books, index, bookId):
         date = book.get("lastReadingDate")
     elif book.get("readingBookDate"):
         date = book.get("readingBookDate")
-    book["date"] = date
+    book["时间"] = date
+    book["开始阅读时间"] = book.get("beginReadingDate")
+    book["最后阅读时间"] = book.get("lastReadingDate")
     if bookId not in notion_books:
-        book["author"] = [
+        book["书名"] = book.get("title")
+        book["BookId"] = book.get("bookId")
+        book["ISBN"] = book.get("isbn")
+        book["链接"] = utils.get_weread_url(bookId)
+        book["简介"] = book.get("intro")
+        book["作者"] = [
             notion_helper.get_relation_id(
                 x, notion_helper.author_database_id, USER_ICON_URL
             )
             for x in book.get("author").split(" ")
         ]
-        book["url"] = utils.get_weread_url(bookId)
         if book.get("categories"):
-            book["categories"] = [
+            book["分类"] = [
                 notion_helper.get_relation_id(
                     x.get("title"), notion_helper.category_database_id, TAG_ICON_URL
                 )
                 for x in book.get("categories")
-        ]
-    else:
-        book.pop("categories",None)
-        book.pop("author",None)
-    properties = utils.get_properties(
-        book, book_properties_name_dict, book_properties_type_dict
-    )
+            ]
+    properties = utils.get_properties(book, book_properties_type_dict)
     if book.get("date"):
         notion_helper.get_date_relation(
             properties,
             pendulum.from_timestamp(book.get("date"), tz="Asia/Shanghai"),
         )
+
     print(f"正在插入《{book.get('title')}》,一共{len(books)}本，当前是第{index+1}本。")
     parent = {"database_id": notion_helper.book_database_id, "type": "database_id"}
     if bookId in notion_books:
