@@ -9,29 +9,6 @@ STATUS = "status"
 TITLE = "title"
 SELECT = "select"
 
-book_properties_name_dict = {
-    "title":"书名",
-    "bookId":"BookId",
-    "isbn":"ISBN",
-    "url":"链接",
-    "author":"作者",
-    "Sort":"Sort",
-    "newRating":"评分",
-    "cover":"封面",
-    "categories":"分类",
-    "status":"阅读状态",
-    "readingTime":"阅读时长",
-    "readingProgress":"阅读进度",
-    "totalReadDay":"阅读天数",
-    "date":"时间",
-    "beginReadingDate":"开始阅读时间",
-    "lastReadingDate":"最后阅读时间",
-    "intro":"简介",
-    "archive":"书架分类",
-    "douban_url":"豆瓣链接",
-    "neodb_url":"NeoDB链接",
-}
-
 book_properties_type_dict = {
     "书名":TITLE,
     "BookId":RICH_TEXT,
@@ -51,6 +28,6 @@ book_properties_type_dict = {
     "最后阅读时间":DATE,
     "简介":RICH_TEXT,
     "书架分类":SELECT,
+    "我的评分":SELECT,
     "豆瓣链接":URL,
-    "NeoDB链接":URL,
 }
