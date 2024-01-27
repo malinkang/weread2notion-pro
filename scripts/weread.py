@@ -265,7 +265,7 @@ if __name__ == "__main__":
             if sort == notion_books.get(bookId).get("Sort"):
                 continue
             pageId = notion_books.get(bookId).get("pageId")
-            print(f"正在同步《{title}》,一共{len(books)}本，当前是第{index+1}本。{pageId}")
+            print(f"正在同步《{title}》,一共{len(books)}本，当前是第{index+1}本。")
             chapter = weread_api.get_chapter_info(bookId)
             bookmark_list = get_bookmark_list(pageId, bookId)
             reviews = get_review_list(pageId,bookId)

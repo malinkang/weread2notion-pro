@@ -1,6 +1,4 @@
 import argparse
-import hashlib
-import json
 import os
 
 import pendulum
@@ -120,10 +118,10 @@ def insert_book_to_notion(books, index, bookId):
                 for x in book.get("categories")
             ]
     properties = utils.get_properties(book, book_properties_type_dict)
-    if book.get("date"):
+    if book.get("时间"):
         notion_helper.get_date_relation(
             properties,
-            pendulum.from_timestamp(book.get("date"), tz="Asia/Shanghai"),
+            pendulum.from_timestamp(book.get("时间"), tz="Asia/Shanghai"),
         )
 
     print(f"正在插入《{book.get('title')}》,一共{len(books)}本，当前是第{index+1}本。")
