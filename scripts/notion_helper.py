@@ -166,7 +166,7 @@ class NotionHelper:
         )
 
     def get_month_relation_id(self, date):
-        month = date.strftime("%Y年%-m月")
+        month = date.strftime("%Y 年%-m 月")
         start, end = get_first_and_last_day_of_month(date)
         properties = {"日期": get_date(format_date(start), format_date(end))}
         return self.get_relation_id(
@@ -184,7 +184,7 @@ class NotionHelper:
     def get_day_relation_id(self, date):
         new_date = date.replace(hour=0, minute=0, second=0, microsecond=0)
         timestamp = (new_date - timedelta(hours=8)).timestamp()
-        day = new_date.strftime("%Y年%m月%d日")
+        day = new_date.strftime("%Y 年%m 月%d 日")
         properties = {
             "日期": get_date(format_date(date)),
             "时间戳": get_number(timestamp),
