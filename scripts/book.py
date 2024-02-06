@@ -83,7 +83,7 @@ def insert_book_to_notion(books, index, bookId):
     book["阅读状态"] = status
     book["阅读时长"] = book.get("readingTime")
     book["阅读天数"] = book.get("totalReadDay")
-    book["评分"] = book.get("newRating")
+    book["评分"] = int(book.get("newRating"))/1000
     if book.get("newRatingDetail") and book.get("newRatingDetail").get("myRating"):
         book["我的评分"] = rating.get(book.get("newRatingDetail").get("myRating"))
     elif status=="已读":
