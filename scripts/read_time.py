@@ -14,7 +14,7 @@ from utils import format_date, get_date, get_icon, get_number, get_relation, get
 def insert_to_notion(page_id,timestamp,duration):
     parent = {"database_id": notion_helper.day_database_id, "type": "database_id"}
     properties = {
-        "标题": get_title(format_date(datetime.utcfromtimestamp(timestamp)+timedelta(hours=8),"%Y年%m月%d日")),
+        "标题": get_title(format_date(datetime.utcfromtimestamp(timestamp)+timedelta(hours=8),"%Y 年 %m 月 %d 日")),
         "日期": get_date(start = format_date(datetime.utcfromtimestamp(timestamp)+timedelta(hours=8))),
         "时长": get_number(duration),
         "时间戳": get_number(timestamp),
