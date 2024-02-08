@@ -130,13 +130,13 @@ def insert_book_to_notion(books, index, bookId):
         notion_helper.update_page(
             page_id=notion_books.get(bookId).get("pageId"),
             properties=properties,
-            icon=utils.get_icon(book.get("cover")),
+            icon=utils.get_icon(book.get("封面")),
         )
     else:
         notion_helper.create_page(
             parent=parent,
             properties=properties,
-            icon=utils.get_icon(book.get("cover")),
+            icon=utils.get_icon(book.get("封面")),
         )
 
 
