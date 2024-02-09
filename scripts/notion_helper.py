@@ -336,12 +336,12 @@ class NotionHelper:
             bookId = get_property_value(result.get("properties").get("BookId"))
             books_dict[bookId] = {
                 "pageId": result.get("id"),
-                "readingTime": get_property_value(result.get("properties").get("阅读时长")),
+                "readingTime": get_property_value(result.get("properties").get("微读时长")),
                 "category": get_property_value(result.get("properties").get("书架分类")),
-                "Sort": get_property_value(result.get("properties").get("Sort")),
+                "Sort": get_property_value(result.get("properties").get("排序标记")),
                 "douban_url": get_property_value(result.get("properties").get("豆瓣链接")),
-                "cover": get_property_value(result.get("properties").get("封面")),
-                "myRating": get_property_value(result.get("properties").get("我的评分")),
+                "cover": get_property_value(result.get("properties").get("图书封面")),
+                "myRating": get_property_value(result.get("properties").get("个人评级")),
                 "comment": get_property_value(result.get("properties").get("豆瓣短评")),
                 "status": get_property_value(result.get("properties").get("阅读状态")),
             }
