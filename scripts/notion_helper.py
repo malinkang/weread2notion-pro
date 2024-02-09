@@ -106,6 +106,7 @@ class NotionHelper:
                     child.get("child_database").get("title")
                 ] = child.get("id")
             elif child["type"] == "image":
+                print(f"image = {child}")
                 self.image_dict["url"] = child.get("image").get("external").get("url")
                 self.image_dict["id"] = child.get("id")
             # 如果子块有子块，递归调用函数
