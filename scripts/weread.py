@@ -83,10 +83,10 @@ def check(bookId):
 
 def get_sort():
     """获取database中的最新时间"""
-    filter = {"property": "Sort", "number": {"is_not_empty": True}}
+    filter = {"property": "排序标记", "number": {"is_not_empty": True}}
     sorts = [
         {
-            "property": "Sort",
+            "property": "排序标记",
             "direction": "descending",
         }
     ]
