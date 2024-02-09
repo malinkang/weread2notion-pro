@@ -70,24 +70,26 @@ def insert_book_to_notion(books, index, bookId):
         douban_url = get_douban_url(isbn)
         if douban_url:
             book["douban_url"] = douban_url
-    book["封面"] = cover
+    book["图书封面"] = cover
     book["阅读进度"] = (
         100 if (book.get("markedStatus") == 4) else book.get("readingProgress", 0)
     ) / 100
     markedStatus = book.get("markedStatus")
     status = "想读"
     if markedStatus == 4:
-        status = "已读"
+        status = "速读⏰"
+    elif markedStatus == 3:
+        status = "弃读📕"
     elif book.get("readingTime", 0) >= 60:
-        status = "在读"
+        status = "初读📗"
     book["阅读状态"] = status
-    book["阅读时长"] = book.get("readingTime")
+    book["微读时长"] = book.get("readingTime")
     book["阅读天数"] = book.get("totalReadDay")
-    book["评分"] = int(book.get("newRating"))/1000
-    if book.get("newRatingDetail") and book.get("newRatingDetail").get("myRating"):
-        book["我的评分"] = rating.get(book.get("newRatingDetail").get("myRating"))
-    elif status=="已读":
-        book["我的评分"] = "未评分"
+    book["大众评分"] = int(book.get("newRating"))/1000
+    # if book.get("newRatingDetail") and book.get("newRatingDetail").get("myRating"):
+    #     book["我的评分"] = rating.get(book.get("newRatingDetail").get("myRating"))
+    # elif status=="已读":
+    #     book["我的评分"] = "未评分"
     date = None
     if book.get("finishedDate"):
         date = book.get("finishedDate")
@@ -95,15 +97,15 @@ def insert_book_to_notion(books, index, bookId):
         date = book.get("lastReadingDate")
     elif book.get("readingBookDate"):
         date = book.get("readingBookDate")
-    book["时间"] = date
-    book["开始阅读时间"] = book.get("beginReadingDate")
-    book["最后阅读时间"] = book.get("lastReadingDate")
+    # book["时间"] = date
+    book["开始时间"] = book.get("beginReadingDate")
+    book["最后时间"] = book.get("lastReadingDate")
     if bookId not in notion_books:
-        book["书名"] = book.get("title")
-        book["BookId"] = book.get("bookId")
+        book["图书名称"] = book.get("title")
+        book["图书 ID"] = book.get("bookId")
         book["ISBN"] = book.get("isbn")
-        book["链接"] = utils.get_weread_url(bookId)
-        book["简介"] = book.get("intro")
+        book["微读链接"] = utils.get_weread_url(bookId)
+        book["内容简介"] = book.get("intro")
         book["作者"] = [
             notion_helper.get_relation_id(
                 x, notion_helper.author_database_id, USER_ICON_URL
@@ -111,7 +113,7 @@ def insert_book_to_notion(books, index, bookId):
             for x in book.get("author").split(" ")
         ]
         if book.get("categories"):
-            book["分类"] = [
+            book["微读分类"] = [
                 notion_helper.get_relation_id(
                     x.get("title"), notion_helper.category_database_id, TAG_ICON_URL
                 )
@@ -130,13 +132,13 @@ def insert_book_to_notion(books, index, bookId):
         notion_helper.update_page(
             page_id=notion_books.get(bookId).get("pageId"),
             properties=properties,
-            icon=utils.get_icon(book.get("封面")),
+            icon=utils.get_icon(book.get("图书封面")),
         )
     else:
         notion_helper.create_page(
             parent=parent,
             properties=properties,
-            icon=utils.get_icon(book.get("封面")),
+            icon=utils.get_icon(book.get("图书封面")),
         )
 
 
