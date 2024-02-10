@@ -283,6 +283,6 @@ if __name__ == "__main__":
             content = sort_notes(pageId, chapter, bookmark_list)
             append_blocks(pageId, content)
             properties = {
-                "Sort":get_number(sort)
+                "排序标记":get_number(sort)
             }
             notion_helper.update_book_page(page_id=pageId,properties=properties)
