@@ -333,7 +333,7 @@ class NotionHelper:
         results = self.query_all(self.book_database_id)
         books_dict = {}
         for result in results:
-            bookId = get_property_value(result.get("properties").get("BookId"))
+            bookId = get_property_value(result.get("properties").get("图书 ID"))
             books_dict[bookId] = {
                 "pageId": result.get("id"),
                 "readingTime": get_property_value(result.get("properties").get("微读时长")),
