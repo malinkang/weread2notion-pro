@@ -20,7 +20,7 @@ book_properties_type_dict = {
     "图书封面":FILES,
     "微读分类":RELATION,
     "阅读状态":STATUS,
-    "阅读时长":NUMBER,
+    "微读时长":NUMBER,
     "阅读进度":NUMBER,
     "阅读天数":NUMBER,
     "阅读时间":DATE,
