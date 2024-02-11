@@ -50,7 +50,7 @@ def get_heading(level, content):
 
 def get_table_of_contents():
     """获取目录"""
-    return {"type": "table_of_contents", "table_of_contents": {"color": "default"}}
+    return {"type": "table_of_contents", "table_of_contents": {"color": "blue"}}
 
 
 def get_title(content):
@@ -126,16 +126,16 @@ def get_callout(content, style, colorStyle, reviewId):
         emoji = "✍️"
     color = "default"
     # 根据划线颜色设置文字的颜色
-    if colorStyle == 1:
-        color = "red"
-    elif colorStyle == 2:
-        color = "purple"
-    elif colorStyle == 3:
-        color = "blue"
-    elif colorStyle == 4:
-        color = "green"
-    elif colorStyle == 5:
-        color = "yellow"
+    # if colorStyle == 1:
+    #     color = "red"
+    # elif colorStyle == 2:
+    #     color = "purple"
+    # elif colorStyle == 3:
+    #     color = "blue"
+    # elif colorStyle == 4:
+    #     color = "green"
+    # elif colorStyle == 5:
+    #     color = "yellow"
     return {
         "type": "callout",
         "callout": {
@@ -243,17 +243,26 @@ def get_properties(dict1, dict2):
         elif type == FILES:
             property = {"files": [{"type": "external", "name": "Cover", "external": {"url": value}}]}
         elif type == DATE:
-            property = {
-                "date": {
-                    "start": pendulum.from_timestamp(
-                        value[0], tz="Asia/Shanghai"
-                    ).to_datetime_string(),
-                    "end": pendulum.from_timestamp(
-                        value[1], tz="Asia/Shanghai"
-                    ).to_datetime_string(),
-                    "time_zone": "Asia/Shanghai",
+            if value != [None, None]:
+                property = {
+                    "date": {
+                        "start": pendulum.from_timestamp(
+                            value[0], tz="Asia/Shanghai"
+                        ).to_datetime_string(),
+                        "end": pendulum.from_timestamp(
+                            value[1], tz="Asia/Shanghai"
+                        ).to_datetime_string(),
+                        "time_zone": "Asia/Shanghai",
+                    }
                 }
-            }
+            else:
+                property = {
+                    "date": {
+                        "start": None,
+                        "end": None,
+                        "time_zone": "Asia/Shanghai",
+                    }
+                }
         elif type==URL:
             property = {"url": value}        
         elif type==SELECT:
