@@ -176,7 +176,11 @@ def append_blocks(id, contents):
     print(f"笔记数{len(contents)}")
     before_block_id = ""
     block_children = notion_helper.get_block_children(id)
-    if len(block_children) > 0 and block_children[0].get("type") == "table_of_contents":
+    if len(block_children) > 0 and block_children[0].get(
+        "type") == "table_of_contents":
+        before_block_id = block_children[0].get("id")
+    elif len(block_children) > 0 and block_children[0][
+        "callout"]["rich_text"][0]["plain_text"] == "目录":
         before_block_id = block_children[0].get("id")
     else:
         response = notion_helper.append_blocks(
