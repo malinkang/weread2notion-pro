@@ -267,7 +267,16 @@ def get_properties(dict1, dict2):
         elif type == FILES:
             property = {"files": [{"type": "external", "name": "Cover", "external": {"url": value}}]}
         elif type == DATE:
-            if value != [None, None]:
+            if isinstance(value, int):
+                property = {
+                    "date": {
+                        "start": pendulum.from_timestamp(
+                            value, tz="Asia/Shanghai"
+                        ).to_datetime_string(),
+                        "time_zone": "Asia/Shanghai",
+                    }
+                }
+            elif value != [None, None]:
                 property = {
                     "date": {
                         "start": pendulum.from_timestamp(
