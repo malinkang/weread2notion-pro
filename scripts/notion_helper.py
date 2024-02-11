@@ -119,10 +119,10 @@ class NotionHelper:
         properties = response.get("properties")
         update_properties = {}
         if (
-            properties.get("阅读时长") is None
-            or properties.get("阅读时长").get("type") != "number"
+            properties.get("微读时长") is None
+            or properties.get("微读时长").get("type") != "number"
         ):
-            update_properties["阅读时长"] = {"number": {}}
+            update_properties["微读时长"] = {"number": {}}
         if (
             properties.get("书架分类") is None
             or properties.get("书架分类").get("type") != "select"
