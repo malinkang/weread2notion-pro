@@ -50,7 +50,31 @@ def get_heading(level, content):
 
 def get_table_of_contents():
     """获取目录"""
-    return {"type": "table_of_contents", "table_of_contents": {"color": "blue"}}
+    return {
+        "type": "callout",
+        "callout": {
+            "rich_text": [{
+            "type": "text",
+            "text": {
+                "content": "目录",
+            }
+            }],
+            "icon": {
+                "external": {
+                    "url": "https://www.notion.so/icons/book-closed_blue.svg?mode=light"
+                }
+            },
+            "color": "blue",
+            "children":[
+                {
+                    "type": "table_of_contents",
+                    "table_of_contents": {
+                        "color": "blue"
+                    }
+                }
+            ]
+        }
+    }
 
 
 def get_title(content):
