@@ -35,6 +35,7 @@ def get_bookmark_list(page_id, bookId):
     }
     dict2 = {get_rich_text_from_result(x, "blockId"): x.get("id") for x in results}
     bookmarks = weread_api.get_bookmark_list(bookId)
+    bookmarks = [b for b in bookmarks if b.get("type") != 0]
     for i in bookmarks:
         if i.get("bookmarkId") in dict1:
             i["blockId"] = dict1.pop(i.get("bookmarkId"))
