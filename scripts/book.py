@@ -100,7 +100,7 @@ def insert_book_to_notion(books, index, bookId):
     # book["时间"] = date
     book["阅读时间"] = [book.get("beginReadingDate"), book.get("lastReadingDate")]
     # book["最后时间"] = book.get("lastReadingDate")
-    print(book["时间"])
+    # print(book["时间"])
     print(book["阅读时间"])
     if bookId not in notion_books:
         book["图书名称"] = book.get("title")
@@ -122,10 +122,10 @@ def insert_book_to_notion(books, index, bookId):
                 for x in book.get("categories")
             ]
     properties = utils.get_properties(book, book_properties_type_dict)
-    if book.get("时间"):
+    if book.get("阅读时间"):
         notion_helper.get_date_relation(
             properties,
-            pendulum.from_timestamp(book.get("时间"), tz="Asia/Shanghai"),
+            pendulum.from_timestamp(book.get("阅读时间"), tz="Asia/Shanghai"),
         )
 
     print(f"正在插入《{book.get('title')}》,一共{len(books)}本，当前是第{index+1}本。")
