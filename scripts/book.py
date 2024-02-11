@@ -16,7 +16,7 @@ TAG_ICON_URL = "https://www.notion.so/icons/tag_gray.svg"
 USER_ICON_URL = "https://www.notion.so/icons/user-circle-filled_gray.svg"
 BOOK_ICON_URL = "https://www.notion.so/icons/book_gray.svg"
 
-rating = {"poor": "⭐️", "fair": "⭐️⭐️⭐️", "good": "⭐️⭐️⭐️⭐️⭐️"}
+rating = {"poor": "⭐️ 不看", "fair": "⭐️⭐️ 一般", "good": "⭐️⭐️⭐️ 推荐"}
 
 
 @retry(stop_max_attempt_number=3, wait_fixed=5000)
