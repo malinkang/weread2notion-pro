@@ -285,7 +285,7 @@ def get_property_value(property):
         else:
             return None
     elif type == "date":
-        return str_to_timestamp(content.get("start"))
+        return (str_to_timestamp(content.get("start")), str_to_timestamp(content.get("end")))
     else:
         return content
 
