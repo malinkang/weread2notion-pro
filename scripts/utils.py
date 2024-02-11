@@ -140,7 +140,7 @@ def get_quote(content):
 
 def get_callout(content, style, colorStyle, reviewId):
     # 根据不同的划线样式设置不同的emoji 直线type=0 背景颜色是1 波浪线是2
-    emoji = "〰️"
+    emoji = "📝"
     if style == 0:
         emoji = "💡"
     elif style == 1:
