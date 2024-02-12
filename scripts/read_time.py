@@ -62,7 +62,9 @@ if __name__ == "__main__":
     image_file = get_file()
     if image_file:
         image_url = upload_image(f"heatmap/{os.getenv('REPOSITORY').split('/')[0]}",image_file,f"./OUT_FOLDER/{image_file}")
-        block_id = notion_helper.image_dict.get("id")
+        block_id = os.getenv("HEATMAP_BLOCK_ID")
+        if block_id == None or block_id.strip() == "":
+            block_id = notion_helper.image_dict.get("id")
         if(image_url and block_id):
             notion_helper.update_image_block_link(block_id,image_url)
     api_data = weread_api.get_api_data()
