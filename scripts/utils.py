@@ -133,7 +133,7 @@ def get_quote(content):
                     "text": {"content": content[:MAX_LENGTH]},
                 }
             ],
-            "color": "orange",
+            "color": "default",
         },
     }
 
