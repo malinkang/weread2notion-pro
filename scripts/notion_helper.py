@@ -344,6 +344,7 @@ class NotionHelper:
                 "myRating": get_property_value(result.get("properties").get("个人评级")),
                 "comment": get_property_value(result.get("properties").get("豆瓣短评")),
                 "status": get_property_value(result.get("properties").get("阅读状态")),
+                "archive": get_property_value(result.get("properties").get("图书归档")),
             }
         return books_dict
 
