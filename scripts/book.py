@@ -181,6 +181,7 @@ if __name__ == "__main__":
                 value.get("status") != "已读"
                 or (value.get("status") == "已读" and value.get("myRating"))
             )
+            or (value.get("archive") is True)
         ):
             not_need_sync.append(key)
     notebooks = weread_api.get_notebooklist()
