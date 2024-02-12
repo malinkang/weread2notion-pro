@@ -170,7 +170,7 @@ def get_callout(content, style, colorStyle, reviewId):
                     "text": {
                         "content": content[:MAX_LENGTH],
                     },
-                    "color": text_color,
+                    "annotations": {"color": text_color,},
                 }
             ],
             "icon": {"emoji": emoji},
