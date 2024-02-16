@@ -11,7 +11,9 @@
 
 > [!IMPORTANT]  
 > 关注公众号获取教程
-![Uploading 扫码_搜索联合传播样式-标准色版.png…]()
+
+![扫码_搜索联合传播样式-标准色版](https://github.com/malinkang/weread2notion-pro/assets/3365208/32fbce17-9a03-4e36-9a39-6e6a34aa3aef)
+
 
 
 ## 群
