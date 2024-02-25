@@ -134,10 +134,10 @@ class NotionHelper:
         ):
             update_properties["豆瓣链接"] = {"url": {}}
         if (
-            properties.get("我的评分") is None
-            or properties.get("我的评分").get("type") != "select"
+            properties.get("个人评级") is None
+            or properties.get("个人评级").get("type") != "select"
         ):
-            update_properties["我的评分"] = {"select": {}}
+            update_properties["个人评级"] = {"select": {}}
         if (
             properties.get("豆瓣短评") is None
             or properties.get("豆瓣短评").get("type") != "rich_text"
