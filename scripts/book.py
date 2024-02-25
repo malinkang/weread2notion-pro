@@ -104,7 +104,7 @@ def insert_book_to_notion(books, index, bookId):
     elif book.get("beginReadingDate"):
         date = book.get("beginReadingDate")
     print(book.get("Sort"), date)
-    print(boo)
+    print(book)
     end_date = max(book.get("Sort"), date)
     book["时间"] = date
         
