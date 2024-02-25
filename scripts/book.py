@@ -104,7 +104,7 @@ def insert_book_to_notion(books, index, bookId):
     book["时间"] = date
         
     if book.get("beginReadingDate"):
-        book["阅读时间"] = [book.get("beginReadingDate"), date]
+        book["阅读时间"] = sorted([book.get("beginReadingDate"), date])
     else:
         book["阅读时间"] = [date, date]
     if bookId not in notion_books:
