@@ -103,6 +103,8 @@ def insert_book_to_notion(books, index, bookId):
         date = book.get("readingBookDate")
     elif book.get("beginReadingDate"):
         date = book.get("beginReadingDate")
+    print(book.get("Sort"), date)
+    print(boo)
     end_date = max(book.get("Sort"), date)
     book["时间"] = date
         
