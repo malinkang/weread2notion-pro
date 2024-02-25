@@ -86,10 +86,12 @@ def insert_book_to_notion(books, index, bookId):
     book["微读时长"] = book.get("readingTime")
     book["阅读天数"] = book.get("totalReadDay")
     book["大众评分"] = int(book.get("newRating"))/1000
-    # if book.get("newRatingDetail") and book.get("newRatingDetail").get("myRating"):
-    #     book["我的评分"] = rating.get(book.get("newRatingDetail").get("myRating"))
-    # elif status=="已读":
-    #     book["我的评分"] = "未评分"
+    if book.get("newRatingDetail") and book.get("newRatingDetail").get("myRating"):
+        book["个人评级"] = rating.get(book.get("newRatingDetail").get("myRating"))
+    elif status== "弃读📕":
+        book["个人评级"] = "⭐️ 不看"
+    elif status== "速读⏰":
+        book["个人评级"] = "⭐️⭐️ 一般"
     date = None
     if book.get("finishedDate"):
         date = book.get("finishedDate")
@@ -101,18 +103,24 @@ def insert_book_to_notion(books, index, bookId):
         date = book.get("readingBookDate")
     elif book.get("beginReadingDate"):
         date = book.get("beginReadingDate")
+    end_date = max(book.get("Sort"), date)
     book["时间"] = date
         
     if book.get("beginReadingDate"):
-        book["阅读时间"] = [book.get("beginReadingDate"), date]
+        book["阅读时间"] = [book.get("beginReadingDate"), end_date]
     else:
-        book["阅读时间"] = [date, date]
+        book["阅读时间"] = [date, end_date]
     if bookId not in notion_books:
         book["图书名称"] = book.get("title")
+        try:
+            book["出版机构"] = book.get("publisher").replace(",", " ").replace(".", " ")
+        except:
+            book["出版机构"] = "未知"
+                
         book["图书 ID"] = book.get("bookId")
         book["ISBN"] = book.get("isbn")
         book["微读链接"] = utils.get_weread_url(bookId)
-        book["内容简介"] = book.get("intro")
+        book["内容简介"] = book.get("intro")[:200] if len(book.get("intro")) > 200 else book.get("intro")
         book["作者"] = [
             notion_helper.get_relation_id(
                 x, notion_helper.author_database_id, USER_ICON_URL
