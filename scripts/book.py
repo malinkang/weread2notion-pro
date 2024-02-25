@@ -117,7 +117,7 @@ def insert_book_to_notion(books, index, bookId):
         book["图书 ID"] = book.get("bookId")
         book["ISBN"] = book.get("isbn")
         book["微读链接"] = utils.get_weread_url(bookId)
-        book["内容简介"] = book.get("intro")[:200] if len(book.get("intro")) > 200 else book.get("intro")
+        book["内容简介"] = book.get("intro")
         book["作者"] = [
             notion_helper.get_relation_id(
                 x, notion_helper.author_database_id, USER_ICON_URL
