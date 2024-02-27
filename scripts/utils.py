@@ -253,7 +253,7 @@ def get_properties(dict1, dict2):
         if type == TITLE:
             property = {
                 "title": [
-                    {"type": "text", "text": {"content": value[:MAX_LENGTH]}}
+                    {"type": "text", "text": {"content": value[0][:MAX_LENGTH], "link": {"url": value[1]}}}
                 ]
             }
         elif type == RICH_TEXT:
