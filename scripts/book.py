@@ -108,7 +108,8 @@ def insert_book_to_notion(books, index, bookId):
     else:
         book["阅读时间"] = [date, date]
     if bookId not in notion_books:
-        book["图书名称"] = book.get("title")
+        book_url = utils.get_weread_url(bookId)
+        book["图书名称"] = (book.get("title"), book_url)
         try:
             book["出版机构"] = book.get("publisher").replace(",", " ").replace(".", " ")
         except:
@@ -116,7 +117,7 @@ def insert_book_to_notion(books, index, bookId):
                 
         book["图书 ID"] = book.get("bookId")
         book["ISBN"] = book.get("isbn")
-        book["微读链接"] = utils.get_weread_url(bookId)
+        book["微读链接"] = book_url
         book["内容简介"] = book.get("intro")
         book["作者"] = [
             notion_helper.get_relation_id(
