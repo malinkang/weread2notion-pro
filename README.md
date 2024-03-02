@@ -14,7 +14,7 @@
 > [!IMPORTANT]  
 > 关注公众号获取教程
 
-![WechatIMG57](https://github.com/malinkang/weread2notion-pro/assets/3365208/f96077fb-c66a-4183-af16-775d09ca7291)
+![扫码_搜索联合传播样式-标准色版](https://github.com/malinkang/weread2notion/assets/3365208/191900c6-958e-4f9b-908d-a40a54889b5e)
 
 
 
