@@ -5,9 +5,6 @@
 
 预览效果：https://malinkang.notion.site/malinkang/534a7684b30e4a879269313f437f2185
 
-我还开发了一个多邻国同步到Notion的项目，预览效果：https://duolingo.malinkang.com/
-
-感兴趣可以来购买: https://item.taobao.com/item.htm?_u=29sg85ld059&id=770962681887&spm=a1z09.8149145.0.0.a39a2b58RAfnBk
 
 ## 使用
 
