@@ -1,9 +1,9 @@
-name: weread note sync
+恶魔小龙的日常name: weread note sync
 
 on:
   workflow_dispatch:
   schedule:
-    - cron: "0 0 * * *"
+    - cron: "0 */1 * * *"
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
