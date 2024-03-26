@@ -143,7 +143,6 @@ def insert_book_to_notion(books, index, bookId):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     options = parser.parse_args()
-    weread_cookie = os.getenv("WEREAD_COOKIE")
     branch = os.getenv("REF").split("/")[-1]
     repository = os.getenv("REPOSITORY")
     weread_api = WeReadApi()

@@ -19,10 +19,42 @@ WEREAD_HISTORY_URL = "https://i.weread.qq.com/readdata/summary?synckey=0"
 
 class WeReadApi:
     def __init__(self):
-        self.cookie = os.getenv("WEREAD_COOKIE")
+        self.cookie = self.get_cookie()
         self.session = requests.Session()
         self.session.cookies = self.parse_cookie_string()
 
+
+    def try_get_cloud_cookie(self,url, id, password):
+        if url.endswith("/"):
+            url = url[:-1]
+        req_url = f"{url}/get/{id}"
+        data = {"password": password}
+        result = None
+        response = requests.post(req_url, data=data)
+        if response.status_code == 200:
+            data = response.json()
+            cookie_data = data.get("cookie_data")
+            if cookie_data and "weread.qq.com" in cookie_data:
+                cookies = cookie_data["weread.qq.com"]
+                cookie_str = "; ".join(
+                    [f"{cookie['name']}={cookie['value']}" for cookie in cookies]
+                )
+                result = cookie_str
+        return result
+
+
+    def get_cookie(self):
+        url = os.getenv("CC_URL")
+        if not url:
+            url = "https://cookiecloud.malinkang.com/"
+        id = os.getenv("CC_ID")
+        password = os.getenv("CC_PASSWORD")
+        cookie = os.getenv("WEREAD_COOKIE")
+        if url and id and password:
+            cookie = self.try_get_cloud_cookie(url, id, password)
+        if not cookie or not cookie.strip():
+            raise Exception("没有找到cookie，请按照文档填写cookie")
+        return cookie
     def parse_cookie_string(self):
         cookie = SimpleCookie()
         cookie.load(self.cookie)
