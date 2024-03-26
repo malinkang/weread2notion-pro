@@ -15,6 +15,9 @@ jobs:
       NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
       NOTION_PAGE: ${{ secrets.NOTION_PAGE }}
       WEREAD_COOKIE: ${{ secrets.WEREAD_COOKIE }}
+      CC_URL: ${{ secrets.CC_URL }}
+      CC_ID: ${{ secrets.CC_ID }}
+      CC_PASSWORD: ${{ secrets.CC_PASSWORD }}
       BOOK_DATABASE_NAME: ${{ vars.BOOK_DATABASE_NAME }}
       AUTHOR_DATABASE_NAME: ${{ vars.AUTHOR_DATABASE_NAME }}
       CATEGORY_DATABASE_NAME: ${{ vars.CATEGORY_DATABASE_NAME }}
@@ -46,7 +49,7 @@ jobs:
         if: env.YEAR == ''
       - name: weread heatmap
         run: |
-          github_heatmap weread  --weread_cookie "${{secrets.WEREAD_COOKIE}}" --year $YEAR  --me "${{secrets.NAME}}" --with-animation --background-color=${{ vars.background_color||'#FFFFFF'}} --track-color=${{ vars.track_color||'#ACE7AE'}} --special-color1=${{ vars.special_color||'#69C16E'}} --special-color2=${{ vars.special_color2||'#549F57'}} --dom-color=${{ vars.dom_color||'#EBEDF0'}} --text-color=${{ vars.text_color||'#000000'}}
+          github_heatmap weread  --year $YEAR  --me "${{secrets.NAME}}" --with-animation --background-color=${{ vars.background_color||'#FFFFFF'}} --track-color=${{ vars.track_color||'#ACE7AE'}} --special-color1=${{ vars.special_color||'#69C16E'}} --special-color2=${{ vars.special_color2||'#549F57'}} --dom-color=${{ vars.dom_color||'#EBEDF0'}} --text-color=${{ vars.text_color||'#000000'}}
       - name: Rename weread.svg to a random name
         run: |
           RANDOM_FILENAME=$(uuidgen).svg
