@@ -177,12 +177,12 @@ class NotionHelper:
             }},
         }
         parent = parent = {"page_id": self.page_id, "type": "page_id"}
-        self.client.databases.create(
+        self.read_database_id=self.client.databases.create(
             parent=parent,
             title=title,
             icon=get_icon("https://www.notion.so/icons/target_gray.svg"),
             properties=properties,
-        )
+        ).get("id")
 
     def update_image_block_link(self, block_id, new_image_url):
         # 更新 image block 的链接
