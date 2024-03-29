@@ -19,7 +19,7 @@
 > [!IMPORTANT]  
 > 欢迎加入微信群讨论。可以讨论使用中遇到的任何问题，也可以讨论Notion使用，后续我也会在群中分享更多Notion自动化工具。
 
-![群](https://drive.malinkang.com/api/raw/?path=/Images/group2.jpg)
+![群](https://images.malinkang.com/group.jpg)
 
 ## 捐赠
 

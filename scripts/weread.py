@@ -257,7 +257,6 @@ def append_blocks_to_notion(id, blocks, after, contents):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     options = parser.parse_args()
-    weread_cookie = os.getenv("WEREAD_COOKIE")
     branch = os.getenv("REF").split("/")[-1]
     repository =  os.getenv("REPOSITORY")
     weread_api = WeReadApi()

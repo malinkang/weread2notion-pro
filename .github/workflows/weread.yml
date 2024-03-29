@@ -15,6 +15,9 @@ jobs:
       NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
       NOTION_PAGE: ${{ secrets.NOTION_PAGE }}
       WEREAD_COOKIE: ${{ secrets.WEREAD_COOKIE }}
+      CC_URL: ${{ secrets.CC_URL }}
+      CC_ID: ${{ secrets.CC_ID }}
+      CC_PASSWORD: ${{ secrets.CC_PASSWORD }}
       BOOK_DATABASE_NAME: ${{ vars.BOOK_DATABASE_NAME }}
       AUTHOR_DATABASE_NAME: ${{ vars.AUTHOR_DATABASE_NAME }}
       CATEGORY_DATABASE_NAME: ${{ vars.CATEGORY_DATABASE_NAME }}

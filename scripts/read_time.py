@@ -56,7 +56,6 @@ def get_file():
         return None
 
 if __name__ == "__main__":
-    weread_cookie = os.getenv("WEREAD_COOKIE")
     notion_helper = NotionHelper()
     weread_api = WeReadApi()
     image_file = get_file()
