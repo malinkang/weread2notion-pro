@@ -1,4 +1,5 @@
 import argparse
+from datetime import datetime, timedelta
 import os
 
 import pendulum
@@ -7,9 +8,7 @@ from notion_helper import NotionHelper
 
 from weread_api import WeReadApi
 import utils
-from config import (
-    book_properties_type_dict,
-)
+from config import book_properties_type_dict, tz
 from retrying import retry
 
 TAG_ICON_URL = "https://www.notion.so/icons/tag_gray.svg"
@@ -86,7 +85,7 @@ def insert_book_to_notion(books, index, bookId):
     book["评分"] = book.get("newRating")
     if book.get("newRatingDetail") and book.get("newRatingDetail").get("myRating"):
         book["我的评分"] = rating.get(book.get("newRatingDetail").get("myRating"))
-    elif status=="已读":
+    elif status == "已读":
         book["我的评分"] = "未评分"
     date = None
     if book.get("finishedDate"):
@@ -126,25 +125,69 @@ def insert_book_to_notion(books, index, bookId):
 
     print(f"正在插入《{book.get('title')}》,一共{len(books)}本，当前是第{index+1}本。")
     parent = {"database_id": notion_helper.book_database_id, "type": "database_id"}
+    result = None
     if bookId in notion_books:
-        notion_helper.update_page(
+        result = notion_helper.update_page(
             page_id=notion_books.get(bookId).get("pageId"),
             properties=properties,
             icon=utils.get_icon(book.get("封面")),
         )
     else:
-        notion_helper.create_page(
+        result = notion_helper.create_page(
             parent=parent,
             properties=properties,
             icon=utils.get_icon(book.get("封面")),
         )
+    page_id = result.get("id")
+    if book.get("readDetail") and book.get("readDetail").get("data"):
+        data = book.get("readDetail").get("data")
+        data = {item.get("readDate"): item.get("readTime") for item in data}
+        insert_read_data(page_id, data)
+
+
+def insert_read_data(page_id, readTimes):
+    readTimes = dict(sorted(readTimes.items()))
+    filter = {"property": "书架", "relation": {"contains": page_id}}
+    results = notion_helper.query_all_by_book(notion_helper.read_database_id, filter)
+    for result in results:
+        timestamp = result.get("properties").get("时间戳").get("number")
+        duration = result.get("properties").get("时长").get("number")
+        id = result.get("id")
+        if timestamp in readTimes:
+            value = readTimes.pop(timestamp)
+            if value != duration:
+                insert_to_notion(
+                    page_id=id,
+                    timestamp=timestamp,
+                    duration=value,
+                    book_database_id=page_id,
+                )
+    for key, value in readTimes.items():
+        insert_to_notion(None, int(key), value, page_id)
+
+
+def insert_to_notion(page_id, timestamp, duration, book_database_id):
+    parent = {"database_id": notion_helper.read_database_id, "type": "database_id"}
+    properties = {
+        "标题": utils.get_title(
+            pendulum.from_timestamp(timestamp, tz=tz).to_date_string()
+        ),
+        "日期": utils.get_date(start=pendulum.from_timestamp(timestamp, tz=tz).format("YYYY-MM-DD HH:mm:ss")),
+        "时长": utils.get_number(duration),
+        "时间戳": utils.get_number(timestamp),
+        "书架": utils.get_relation([book_database_id]),
+    }
+    if page_id != None:
+        notion_helper.client.pages.update(page_id=page_id, properties=properties)
+    else:
+        notion_helper.client.pages.create(
+            parent=parent,
+            icon=utils.get_icon("https://www.notion.so/icons/target_red.svg"),
+            properties=properties,
+        )
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
-    options = parser.parse_args()
-    branch = os.getenv("REF").split("/")[-1]
-    repository = os.getenv("REPOSITORY")
     weread_api = WeReadApi()
     notion_helper = NotionHelper()
     notion_books = notion_helper.get_all_book()

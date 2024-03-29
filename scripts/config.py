@@ -31,3 +31,4 @@ book_properties_type_dict = {
     "我的评分":SELECT,
     "豆瓣链接":URL,
 }
+tz='Asia/Shanghai' 
