@@ -329,14 +329,20 @@ class NotionHelper:
         return self.client.pages.update(page_id=page_id, properties=properties)
 
     @retry(stop_max_attempt_number=3, wait_fixed=5000)
-    def update_page(self, page_id, properties):
+    def update_page(self, page_id, properties,cover):
         return self.client.pages.update(
-            page_id=page_id, properties=properties
+            page_id=page_id, properties=properties,cover=cover
         )
 
     @retry(stop_max_attempt_number=3, wait_fixed=5000)
     def create_page(self, parent, properties, icon):
         return self.client.pages.create(parent=parent, properties=properties, icon=icon)
+    
+
+
+    @retry(stop_max_attempt_number=3, wait_fixed=5000)
+    def create_book_page(self, parent, properties, icon):
+        return self.client.pages.create(parent=parent, properties=properties, icon=icon,cover=icon)
 
     @retry(stop_max_attempt_number=3, wait_fixed=5000)
     def query(self, **kwargs):
@@ -381,7 +387,7 @@ class NotionHelper:
                 "douban_url": get_property_value(
                     result.get("properties").get("豆瓣链接")
                 ),
-                "cover": get_property_value(result.get("properties").get("封面")),
+                "cover": result.get("cover"),
                 "myRating": get_property_value(
                     result.get("properties").get("我的评分")
                 ),
