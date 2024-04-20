@@ -56,20 +56,6 @@ def insert_book_to_notion(books, index, bookId):
     readInfo.update(readInfo.get("readDetail", {}))
     readInfo.update(readInfo.get("bookInfo", {}))
     book.update(readInfo)
-    cover = book.get("cover")
-    if cover.startswith("http"):
-        if not cover.endswith(".jpg"):
-            cover = utils.upload_cover(cover)
-        else:
-            cover = cover.replace("/s_", "/t7_")
-    else:
-        cover = BOOK_ICON_URL
-    isbn = book.get("isbn")
-    if isbn and isbn.strip():
-        douban_url = get_douban_url(isbn)
-        if douban_url:
-            book["douban_url"] = douban_url
-    book["封面"] = cover
     book["阅读进度"] = (
         100 if (book.get("markedStatus") == 4) else book.get("readingProgress", 0)
     ) / 100
@@ -97,7 +83,15 @@ def insert_book_to_notion(books, index, bookId):
     book["时间"] = date
     book["开始阅读时间"] = book.get("beginReadingDate")
     book["最后阅读时间"] = book.get("lastReadingDate")
+    cover = book.get("cover").replace("/s_", "/t7_")
+    if not cover.startswith("http"):
+        cover = BOOK_ICON_URL
     if bookId not in notion_books:
+        isbn = book.get("isbn")
+        if isbn and isbn.strip():
+            douban_url = get_douban_url(isbn)
+            if douban_url:
+                book["douban_url"] = douban_url
         book["书名"] = book.get("title")
         book["BookId"] = book.get("bookId")
         book["ISBN"] = book.get("isbn")
@@ -130,13 +124,13 @@ def insert_book_to_notion(books, index, bookId):
         result = notion_helper.update_page(
             page_id=notion_books.get(bookId).get("pageId"),
             properties=properties,
-            icon=utils.get_icon(book.get("封面")),
+            cover=utils.get_icon(cover),
         )
     else:
-        result = notion_helper.create_page(
+        result = notion_helper.create_book_page(
             parent=parent,
             properties=properties,
-            icon=utils.get_icon(book.get("封面")),
+            icon=utils.get_icon(cover),
         )
     page_id = result.get("id")
     if book.get("readDetail") and book.get("readDetail").get("data"):
@@ -172,7 +166,11 @@ def insert_to_notion(page_id, timestamp, duration, book_database_id):
         "标题": utils.get_title(
             pendulum.from_timestamp(timestamp, tz=tz).to_date_string()
         ),
-        "日期": utils.get_date(start=pendulum.from_timestamp(timestamp, tz=tz).format("YYYY-MM-DD HH:mm:ss")),
+        "日期": utils.get_date(
+            start=pendulum.from_timestamp(timestamp, tz=tz).format(
+                "YYYY-MM-DD HH:mm:ss"
+            )
+        ),
         "时长": utils.get_number(duration),
         "时间戳": utils.get_number(timestamp),
         "书架": utils.get_relation([book_database_id]),
@@ -207,9 +205,7 @@ if __name__ == "__main__":
                 or value.get("readingTime") == bookProgress.get(key).get("readingTime")
             )
             and (archive_dict.get(key) == value.get("category"))
-            and value.get("cover")
-            and (not value.get("cover").endswith("/0.jpg"))
-            and (not value.get("cover").endswith("parsecover"))
+            and (value.get("cover") is not None)
             and (
                 value.get("status") != "已读"
                 or (value.get("status") == "已读" and value.get("myRating"))
