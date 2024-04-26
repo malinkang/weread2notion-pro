@@ -60,7 +60,8 @@ if __name__ == "__main__":
     weread_api = WeReadApi()
     image_file = get_file()
     if image_file:
-        image_url = upload_image(f"heatmap/{os.getenv('REPOSITORY').split('/')[0]}",image_file,f"./OUT_FOLDER/{image_file}")
+        image_url=f"https://raw.githubusercontent.com/{os.getenv('REPOSITORY')}/{os.getenv('REF').split('/')[-1]}/OUT_FOLDER/{image_file}"
+        print(f"image_url: {image_url}")
         block_id = os.getenv("HEATMAP_BLOCK_ID")
         if block_id == None or block_id.strip() == "":
             block_id = notion_helper.image_dict.get("id")
