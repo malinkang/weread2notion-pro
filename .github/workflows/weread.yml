@@ -47,3 +47,4 @@ jobs:
       - name: weread sync
         run: |
           python -u scripts/weread.py
+      
