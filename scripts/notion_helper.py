@@ -109,9 +109,11 @@ class NotionHelper:
         # 遍历子块
         for child in children:
             # 检查子块的类型
+
             if self.first_block_id is None and child.get("type").startswith("heading"):
                 self.first_block_id = child.get("id")
                 self.first_block_parent_id = child.get("parent").get("block_id")
+
             if child["type"] == "child_database":
                 self.database_id_dict[child.get("child_database").get("title")] = (
                     child.get("id")

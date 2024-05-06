@@ -81,6 +81,8 @@ def get_file():
         return None
 
 
+HEATMAP_GUIDE = "https://mp.weixin.qq.com/s?__biz=MzI1OTcxOTI4NA==&mid=2247484145&idx=1&sn=81752852420b9153fc292b7873217651&chksm=ea75ebeadd0262fc65df100370d3f983ba2e52e2fcde2deb1ed49343fbb10645a77570656728&token=157143379&lang=zh_CN#rd"
+
 if __name__ == "__main__":
     notion_helper = NotionHelper()
     weread_api = WeReadApi()
@@ -102,6 +104,8 @@ if __name__ == "__main__":
             response = notion_helper.append_blocks(
                 block_id=notion_helper.page_id, children=[get_embed(heatmap_url)]
             )
+    else:
+        print(f"更新热力图失败，没有生成热力图。具体参考：{HEATMAP_GUIDE}")
     api_data = weread_api.get_api_data()
     readTimes = {int(key): value for key, value in api_data.get("readTimes").items()}
     now = pendulum.now("Asia/Shanghai").start_of("day")
