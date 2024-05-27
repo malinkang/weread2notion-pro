@@ -9,7 +9,7 @@
 ## 使用
 
 > [!IMPORTANT]  
-> 关注公众号获取教程，后续有更新也会第一时间在公众号里同步。
+> 关注公众号回复**微信读书**获取教程，后续有更新也会第一时间在公众号里同步。
 
 ![扫码_搜索联合传播样式-标准色版](https://github.com/malinkang/weread2notion/assets/3365208/191900c6-958e-4f9b-908d-a40a54889b5e)
 
@@ -20,7 +20,7 @@
 
 | 微信群 | QQ群 |
 | --- | --- |
-| <div align="center"><img src="https://github.com/malinkang/weread2notion/assets/3365208/5efff69c-7177-4200-9422-8d71970fb4fc" ></div> | <div align="center"><img src="https://images.malinkang.com/2024/04/b225b17d60670e4a6ff3459bbde80d28.jpg" width="50%"></div> |
+| <div align="center"><img src="https://github.com/WhatsApp2Plus/weread2notion-pro2/assets/3365208/02d1e431-7550-4f8c-8de7-67b5c6a59410" ></div> | <div align="center"><img src="https://images.malinkang.com/2024/04/b225b17d60670e4a6ff3459bbde80d28.jpg" width="50%"></div> |
 
 
 ## 捐赠
