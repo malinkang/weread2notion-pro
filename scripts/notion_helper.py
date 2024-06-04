@@ -82,15 +82,12 @@ class NotionHelper:
             )
         else:
             self.database_id_dict.get(self.database_name_dict.get("CHAPTER_DATABASE_NAME"))
-        self.read_database_id = self.database_id_dict.get(
-            self.database_name_dict.get("READ_DATABASE_NAME")
-        )
         if "阅读记录" in self.property_dict:
             self.read_database_id = self.get_relation_database_id(
                 self.property_dict.get("阅读记录")
             )
         else:
-            self.read_database_id.get(self.database_name_dict.get("READ_DATABASE_NAME"))
+            self.database_id_dict.get(self.database_name_dict.get("READ_DATABASE_NAME"))
         self.update_book_database()
         if self.read_database_id is None:
             self.create_database()
