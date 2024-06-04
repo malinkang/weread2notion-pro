@@ -38,6 +38,7 @@ class NotionHelper:
     database_id_dict = {}
     heatmap_block_id = None
     property_dict = {}
+
     def __init__(self):
         self.client = Client(auth=os.getenv("NOTION_TOKEN"), log_level=logging.ERROR)
         self.__cache = {}
@@ -81,16 +82,21 @@ class NotionHelper:
                 self.property_dict.get("章节")
             )
         else:
-            self.database_id_dict.get(self.database_name_dict.get("CHAPTER_DATABASE_NAME"))
+            self.chapter_database_id = self.database_id_dict.get(
+                self.database_name_dict.get("CHAPTER_DATABASE_NAME")
+            )
         if "阅读记录" in self.property_dict:
             self.read_database_id = self.get_relation_database_id(
                 self.property_dict.get("阅读记录")
             )
         else:
-            self.database_id_dict.get(self.database_name_dict.get("READ_DATABASE_NAME"))
+            self.read_database_id = self.database_id_dict.get(
+                self.database_name_dict.get("READ_DATABASE_NAME")
+            )
         self.update_book_database()
         if self.read_database_id is None:
             self.create_database()
+
     def get_relation_database_id(self, property):
         return property.get("relation").get("database_id")
 
@@ -115,7 +121,11 @@ class NotionHelper:
                     child.get("id")
                 )
             elif child["type"] == "embed" and child.get("embed").get("url"):
-                if child.get("embed").get("url").startswith("https://heatmap.malinkang.com/"):
+                if (
+                    child.get("embed")
+                    .get("url")
+                    .startswith("https://heatmap.malinkang.com/")
+                ):
                     self.heatmap_block_id = child.get("id")
             # 如果子块有子块，递归调用函数
             if "has_children" in child and child["has_children"]:
