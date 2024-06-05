@@ -20,7 +20,8 @@
 
 | 微信群 | QQ群 |
 | --- | --- |
-| <div align="center"><img src="https://github.com/WhatsApp2Plus/weread2notion-pro2/assets/3365208/02d1e431-7550-4f8c-8de7-67b5c6a59410" ></div> | <div align="center"><img src="https://images.malinkang.com/2024/04/b225b17d60670e4a6ff3459bbde80d28.jpg" width="50%"></div> |
+| <div align="center"><img src="https://github.com/malinkang/weread2notion/assets/3365208/f230a01f-bc1a-48dc-95f6-ac7ad0d1ecc5" ></div> | <div align="center"><img src="https://images.malinkang.com/2024/04/b225b17d60670e4a6ff3459bbde80d28.jpg" width="50%"></div> |
+
 
 
 ## 捐赠
