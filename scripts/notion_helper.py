@@ -39,6 +39,7 @@ class NotionHelper:
     heatmap_block_id = None
     property_dict = {}
 
+
     def __init__(self):
         self.client = Client(auth=os.getenv("NOTION_TOKEN"), log_level=logging.ERROR)
         self.__cache = {}
@@ -51,6 +52,7 @@ class NotionHelper:
             self.database_name_dict.get("BOOK_DATABASE_NAME")
         )
         r = self.client.databases.retrieve(database_id=self.book_database_id)
+
         for key, value in r.get("properties").items():
             self.property_dict[key] = value
         self.review_database_id = self.get_relation_database_id(
@@ -96,6 +98,7 @@ class NotionHelper:
         self.update_book_database()
         if self.read_database_id is None:
             self.create_database()
+
 
     def get_relation_database_id(self, property):
         return property.get("relation").get("database_id")
