@@ -255,15 +255,20 @@ def append_blocks_to_notion(id, blocks, after, contents):
 
 
 if __name__ == "__main__":
+    print("praser")
     parser = argparse.ArgumentParser()
+    print("options")
     options = parser.parse_args()
+    print("branch")
     branch = os.getenv("REF").split("/")[-1]
     repository =  os.getenv("REPOSITORY")
     weread_api = WeReadApi()
+    print(weread_api)
     notion_helper = NotionHelper()
     notion_books = notion_helper.get_all_book()
     books = weread_api.get_notebooklist()
     print(len(books))
+    print(books)
     if books != None:
         for index, book in enumerate(books):
             bookId = book.get("bookId")
@@ -276,6 +281,7 @@ if __name__ == "__main__":
             pageId = notion_books.get(bookId).get("pageId")
             print(f"正在同步《{title}》,一共{len(books)}本，当前是第{index+1}本。")
             chapter = weread_api.get_chapter_info(bookId)
+            print(chapter)
             bookmark_list = get_bookmark_list(pageId, bookId)
             reviews = get_review_list(pageId,bookId)
             bookmark_list.extend(reviews)
