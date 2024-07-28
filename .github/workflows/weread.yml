@@ -3,7 +3,7 @@ name: weread note sync
 on:
   workflow_dispatch:
   schedule:
-    - cron: "30 * * * *"
+    - cron: "0 * * * *"
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
