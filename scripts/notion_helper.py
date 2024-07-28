@@ -28,15 +28,18 @@ USER_ICON_URL = "https://www.notion.so/icons/user-circle-filled_gray.svg"
 TARGET_ICON_URL = "https://www.notion.so/icons/target_red.svg"
 BOOKMARK_ICON_URL = "https://www.notion.so/icons/bookmark_gray.svg"
 
+DATE_EMOJ_ICON = "🗓️"
+
+
 
 class NotionHelper:
     database_name_dict = {
-        "BOOK_DATABASE_NAME": "书架",
+        "BOOK_DATABASE_NAME": "文献笔记",
         "REVIEW_DATABASE_NAME": "笔记",
         "BOOKMARK_DATABASE_NAME": "划线",
-        "DAY_DATABASE_NAME": "日",
-        "WEEK_DATABASE_NAME": "周",
-        "MONTH_DATABASE_NAME": "月",
+        "DAY_DATABASE_NAME": "每日工作",
+        "WEEK_DATABASE_NAME": "每周工作",
+        "MONTH_DATABASE_NAME": "每月工作",
         "YEAR_DATABASE_NAME": "年",
         "CATEGORY_DATABASE_NAME": "分类",
         "AUTHOR_DATABASE_NAME": "作者",
@@ -47,6 +50,7 @@ class NotionHelper:
     heatmap_block_id = None
 
     def __init__(self):
+        # os.environ['NOTION_PAGE'] = 'd91e1d17-1a03-4165-af8c-7cf49e185dcd'
         self.client = Client(auth=os.getenv("NOTION_TOKEN"), log_level=logging.ERROR)
         self.__cache = {}
         self.page_id = self.extract_page_id(os.getenv("NOTION_PAGE"))
@@ -108,7 +112,7 @@ class NotionHelper:
         for child in children:
             # 检查子块的类型
             if child["type"] == "child_database":
-                self.database_id_dict[child.get("child_database").get("title")] = (
+                self.database_id_dict[child.get("child_database").get("title").strip()] = (
                     child.get("id")
                 )
             elif child["type"] == "embed" and child.get("embed").get("url"):
@@ -215,6 +219,15 @@ class NotionHelper:
         )
 
     def get_day_relation_id(self, date):
+        new_date = date.replace(hour=0, minute=0, second=0, microsecond=0)
+        day = new_date.strftime("%Y-%m-%d")
+
+        properties = {}
+        return self.get_relation_id(
+            day, self.day_database_id, DATE_EMOJ_ICON, properties
+        )
+
+    def get_day_relation_id_old(self, date):
         new_date = date.replace(hour=0, minute=0, second=0, microsecond=0)
         timestamp = (new_date - timedelta(hours=8)).timestamp()
         day = new_date.strftime("%Y年%m月%d日")
@@ -428,23 +441,30 @@ class NotionHelper:
             results.extend(response.get("results"))
         return results
 
+    def get_date_relations(self, properties, dates):
+        properties["阅读日"] = get_relation(
+            [
+                self.get_day_relation_id(date) for date in dates
+            ]
+        )
+
     def get_date_relation(self, properties, date):
-        properties["年"] = get_relation(
-            [
-                self.get_year_relation_id(date),
-            ]
-        )
-        properties["月"] = get_relation(
-            [
-                self.get_month_relation_id(date),
-            ]
-        )
-        properties["周"] = get_relation(
-            [
-                self.get_week_relation_id(date),
-            ]
-        )
-        properties["日"] = get_relation(
+        #properties["年"] = get_relation(
+        #    [
+        #        self.get_year_relation_id(date),
+        #    ]
+        #)
+        #properties["月"] = get_relation(
+        #    [
+        #        self.get_month_relation_id(date),
+        #    ]
+        #)
+        #properties["周"] = get_relation(
+        #    [
+        #        self.get_week_relation_id(date),
+        #    ]
+        #
+        properties["阅读日"] = get_relation(
             [
                 self.get_day_relation_id(date),
             ]

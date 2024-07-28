@@ -1,4 +1,5 @@
 import argparse
+import traceback
 from datetime import datetime, timedelta
 import os
 
@@ -10,6 +11,8 @@ from weread_api import WeReadApi
 import utils
 from config import book_properties_type_dict, tz
 from retrying import retry
+import json
+from datetime import datetime
 
 TAG_ICON_URL = "https://www.notion.so/icons/tag_gray.svg"
 USER_ICON_URL = "https://www.notion.so/icons/user-circle-filled_gray.svg"
@@ -68,7 +71,7 @@ def insert_book_to_notion(books, index, bookId):
     book["阅读状态"] = status
     book["阅读时长"] = book.get("readingTime")
     book["阅读天数"] = book.get("totalReadDay")
-    book["评分"] = book.get("newRating")
+    #book["评分"] = book.get("newRating")
     if book.get("newRatingDetail") and book.get("newRatingDetail").get("myRating"):
         book["我的评分"] = rating.get(book.get("newRatingDetail").get("myRating"))
     elif status == "已读":
@@ -81,18 +84,20 @@ def insert_book_to_notion(books, index, bookId):
     elif book.get("readingBookDate"):
         date = book.get("readingBookDate")
     book["时间"] = date
-    book["开始阅读时间"] = book.get("beginReadingDate")
-    book["最后阅读时间"] = book.get("lastReadingDate")
+    book["类型"] = "书籍"
+    #book["开始阅读时间"] = book.get("beginReadingDate")
+    #book["最后阅读时间"] = book.get("lastReadingDate")
     cover = book.get("cover").replace("/s_", "/t7_")
     if not cover and not cover.strip() and not cover.startswith("http"):
         cover = BOOK_ICON_URL
     if bookId not in notion_books:
         isbn = book.get("isbn")
-        if isbn and isbn.strip():
-            douban_url = get_douban_url(isbn)
-            if douban_url:
-                book["douban_url"] = douban_url
-        book["书名"] = book.get("title")
+        #链接timeout，先注释
+        #if isbn and isbn.strip():
+        #    douban_url = get_douban_url(isbn)
+        #    if douban_url:
+        #        book["douban_url"] = douban_url
+        book["标题"] = book.get("title")
         book["BookId"] = book.get("bookId")
         book["ISBN"] = book.get("isbn")
         book["链接"] = utils.get_weread_url(bookId)
@@ -111,13 +116,21 @@ def insert_book_to_notion(books, index, bookId):
                 for x in book.get("categories")
             ]
     properties = utils.get_properties(book, book_properties_type_dict)
-    if book.get("时间"):
-        notion_helper.get_date_relation(
-            properties,
-            pendulum.from_timestamp(book.get("时间"), tz="Asia/Shanghai"),
-        )
 
     print(f"正在插入《{book.get('title')}》,一共{len(books)}本，当前是第{index+1}本。")
+    if not book.get("readDetail") or not book.get("readDetail").get("data"):
+        print(f"《{book.get('title')}》没有阅读记录，跳过")
+        return
+
+    if book.get("时间"):
+        #取书籍的阅读记录，可能有多天
+        book['时间'] = [x['readDate'] for x in book.get('readDetail').get('data')]
+        notion_helper.get_date_relations(
+            properties,
+            #时间戳转换为北京时间
+            [pendulum.from_timestamp(x, tz="Asia/Shanghai") for x in book.get("时间")]
+        )
+
     parent = {"database_id": notion_helper.book_database_id, "type": "database_id"}
     result = None
     if bookId in notion_books:
@@ -142,6 +155,7 @@ def insert_book_to_notion(books, index, bookId):
 def insert_read_data(page_id, readTimes):
     readTimes = dict(sorted(readTimes.items()))
     filter = {"property": "书架", "relation": {"contains": page_id}}
+    #拿到当前书籍$page_id的所有阅读记录
     results = notion_helper.query_all_by_book(notion_helper.read_database_id, filter)
     for result in results:
         timestamp = result.get("properties").get("时间戳").get("number")
@@ -160,6 +174,7 @@ def insert_read_data(page_id, readTimes):
         insert_to_notion(None, int(key), value, page_id)
 
 
+#插入或更新阅读记录
 def insert_to_notion(page_id, timestamp, duration, book_database_id):
     parent = {"database_id": notion_helper.read_database_id, "type": "database_id"}
     properties = {
@@ -186,13 +201,17 @@ def insert_to_notion(page_id, timestamp, duration, book_database_id):
 
 
 if __name__ == "__main__":
+    current_time = datetime.now()
+    print("开始同步阅读记录，当前时间: ", current_time)
     weread_api = WeReadApi()
     notion_helper = NotionHelper()
     notion_books = notion_helper.get_all_book()
     bookshelf_books = weread_api.get_bookshelf()
+    # 获取书架上的图书信息
     bookProgress = bookshelf_books.get("bookProgress")
     bookProgress = {book.get("bookId"): book for book in bookProgress}
     archive_dict = {}
+    #acchive是书单的名字
     for archive in bookshelf_books.get("archive"):
         name = archive.get("name")
         bookIds = archive.get("bookIds")
@@ -211,11 +230,18 @@ if __name__ == "__main__":
                 or (value.get("status") == "已读" and value.get("myRating"))
             )
         ):
+            #这里判定Notion中的书籍和微信中的书籍是否有属性发现变化，没有的话就不需要同步了
             not_need_sync.append(key)
+            #continue
     notebooks = weread_api.get_notebooklist()
     notebooks = [d["bookId"] for d in notebooks if "bookId" in d]
     books = bookshelf_books.get("books")
     books = [d["bookId"] for d in books if "bookId" in d]
     books = list((set(notebooks) | set(books)) - set(not_need_sync))
     for index, bookId in enumerate(books):
-        insert_book_to_notion(books, index, bookId)
+        try:
+            insert_book_to_notion(books, index, bookId)
+        except Exception as e:
+            print("处理book: " + bookId + "出现异常，跳过:")
+            traceback.print_exc()
+            continue

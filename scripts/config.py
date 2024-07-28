@@ -10,7 +10,7 @@ TITLE = "title"
 SELECT = "select"
 
 book_properties_type_dict = {
-    "书名":TITLE,
+    "标题":TITLE,
     "BookId":RICH_TEXT,
     "ISBN":RICH_TEXT,
     "链接":URL,
@@ -30,5 +30,6 @@ book_properties_type_dict = {
     "书架分类":SELECT,
     "我的评分":SELECT,
     "豆瓣链接":URL,
+    "类型":SELECT
 }
 tz='Asia/Shanghai' 
