@@ -4,6 +4,7 @@ import requests
 
 from notion_helper import NotionHelper
 from weread_api import WeReadApi
+from datetime import datetime
 
 from utils import (
     get_callout,
@@ -127,7 +128,7 @@ def download_image(url, save_dir="cover"):
 
 
 def sort_notes(page_id, chapter, bookmark_list):
-    """对笔记进行排序"""
+    """对笔记和划线进行排序"""
     bookmark_list = sorted(
         bookmark_list,
         key=lambda x: (
@@ -144,6 +145,8 @@ def sort_notes(page_id, chapter, bookmark_list):
         results = notion_helper.query_all_by_book(
             notion_helper.chapter_database_id, filter
         )
+
+        # 已经插入到notion的chapter?
         dict1 = {
             get_number_from_result(x, "chapterUid"): get_rich_text_from_result(
                 x, "blockId"
@@ -151,18 +154,22 @@ def sort_notes(page_id, chapter, bookmark_list):
             for x in results
         }
         dict2 = {get_rich_text_from_result(x, "blockId"): x.get("id") for x in results}
+        # 按chapter聚合的划线和笔记
         d = {}
         for data in bookmark_list:
             chapterUid = data.get("chapterUid", 1)
             if chapterUid not in d:
                 d[chapterUid] = []
             d[chapterUid].append(data)
+
+        # 把章节信息也插入到notes中
         for key, value in d.items():
             if key in chapter:
                 if key in dict1:
                     chapter.get(key)["blockId"] = dict1.pop(key)
                 notes.append(chapter.get(key))
             notes.extend(value)
+
         for blockId in dict1.values():
             notion_helper.delete_block(blockId)
             notion_helper.delete_block(dict2.get(blockId))
@@ -255,6 +262,9 @@ def append_blocks_to_notion(id, blocks, after, contents):
 
 
 if __name__ == "__main__":
+    current_time = datetime.now()
+    print("开始同步笔记，当前时间: ", current_time)
+
     parser = argparse.ArgumentParser()
     options = parser.parse_args()
     branch = os.getenv("REF").split("/")[-1]
@@ -263,7 +273,8 @@ if __name__ == "__main__":
     notion_helper = NotionHelper()
     notion_books = notion_helper.get_all_book()
     books = weread_api.get_notebooklist()
-    print(len(books))
+    #print(notion_books)
+    #print(books)
     if books != None:
         for index, book in enumerate(books):
             bookId = book.get("bookId")
@@ -271,6 +282,7 @@ if __name__ == "__main__":
             sort = book.get("sort")
             if bookId not in notion_books:
                 continue
+            # 这个sort是啥意思？
             if sort == notion_books.get(bookId).get("Sort"):
                 continue
             pageId = notion_books.get(bookId).get("pageId")

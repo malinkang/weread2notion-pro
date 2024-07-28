@@ -88,7 +88,10 @@ def get_date(start, end=None):
 
 
 def get_icon(url):
-    return {"type": "external", "external": {"url": url}}
+    if url.find("https") != -1:
+        return {"type": "external", "external": {"url": url}}
+    else:
+        return {"type": "emoji", 'emoji': url}
 
 
 def get_select(name):
