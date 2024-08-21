@@ -118,7 +118,7 @@ def insert_book_to_notion(books, index, bookId):
             pendulum.from_timestamp(book.get("时间"), tz="Asia/Shanghai"),
         )
 
-    print(f"正在插入《{book.get('title')}》,一共{len(books)}本，当前是第{index+1}本。")
+    print(f"::notice::正在插入《{book.get('title')}》,一共{len(books)}本，当前是第{index+1}本。")
     parent = {"database_id": notion_helper.book_database_id, "type": "database_id"}
     result = None
     if bookId in notion_books:
