@@ -44,7 +44,7 @@ class NotionHelper:
         "READ_DATABASE_NAME": "阅读记录",
     }
     database_id_dict = {}
-    image_dict = {}
+    heatmap_block_id = None
 
     def __init__(self):
         self.client = Client(auth=os.getenv("NOTION_TOKEN"), log_level=logging.ERROR)
@@ -91,7 +91,6 @@ class NotionHelper:
         if self.read_database_id is None:
             self.create_database()
 
-
     def extract_page_id(self, notion_url):
         # 正则表达式匹配 32 个字符的 Notion page_id
         match = re.search(
@@ -108,14 +107,13 @@ class NotionHelper:
         # 遍历子块
         for child in children:
             # 检查子块的类型
-
             if child["type"] == "child_database":
-                self.database_id_dict[
-                    child.get("child_database").get("title")
-                ] = child.get("id")
-            elif child["type"] == "image" and child.get("image").get("external"):
-                self.image_dict["url"] = child.get("image").get("external").get("url")
-                self.image_dict["id"] = child.get("id")
+                self.database_id_dict[child.get("child_database").get("title")] = (
+                    child.get("id")
+                )
+            elif child["type"] == "embed" and child.get("embed").get("url"):
+                if child.get("embed").get("url").startswith("https://heatmap.malinkang.com/"):
+                    self.heatmap_block_id = child.get("id")
             # 如果子块有子块，递归调用函数
             if "has_children" in child and child["has_children"]:
                 self.search_database(child["id"])
@@ -171,24 +169,24 @@ class NotionHelper:
             "时长": {"number": {}},
             "时间戳": {"number": {}},
             "日期": {"date": {}},
-            "书架": {"relation": {
-                "database_id":self.book_database_id,
-                "single_property": {},
-            }},
+            "书架": {
+                "relation": {
+                    "database_id": self.book_database_id,
+                    "single_property": {},
+                }
+            },
         }
         parent = parent = {"page_id": self.page_id, "type": "page_id"}
-        self.read_database_id=self.client.databases.create(
+        self.read_database_id = self.client.databases.create(
             parent=parent,
             title=title,
             icon=get_icon("https://www.notion.so/icons/target_gray.svg"),
             properties=properties,
         ).get("id")
 
-    def update_image_block_link(self, block_id, new_image_url):
+    def update_heatmap(self, block_id, url):
         # 更新 image block 的链接
-        self.client.blocks.update(
-            block_id=block_id, image={"external": {"url": new_image_url}}
-        )
+        return self.client.blocks.update(block_id=block_id, embed={"url": url})
 
     def get_week_relation_id(self, date):
         year = date.isocalendar().year
@@ -329,20 +327,20 @@ class NotionHelper:
         return self.client.pages.update(page_id=page_id, properties=properties)
 
     @retry(stop_max_attempt_number=3, wait_fixed=5000)
-    def update_page(self, page_id, properties,cover):
+    def update_page(self, page_id, properties, cover):
         return self.client.pages.update(
-            page_id=page_id, properties=properties,cover=cover
+            page_id=page_id, properties=properties, cover=cover
         )
 
     @retry(stop_max_attempt_number=3, wait_fixed=5000)
     def create_page(self, parent, properties, icon):
         return self.client.pages.create(parent=parent, properties=properties, icon=icon)
-    
-
 
     @retry(stop_max_attempt_number=3, wait_fixed=5000)
     def create_book_page(self, parent, properties, icon):
-        return self.client.pages.create(parent=parent, properties=properties, icon=icon,cover=icon)
+        return self.client.pages.create(
+            parent=parent, properties=properties, icon=icon, cover=icon
+        )
 
     @retry(stop_max_attempt_number=3, wait_fixed=5000)
     def query(self, **kwargs):
