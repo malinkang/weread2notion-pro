@@ -32,20 +32,11 @@ BOOKMARK_ICON_URL = "https://www.notion.so/icons/bookmark_gray.svg"
 class NotionHelper:
     database_name_dict = {
         "BOOK_DATABASE_NAME": "书架",
-        "REVIEW_DATABASE_NAME": "笔记",
-        "BOOKMARK_DATABASE_NAME": "划线",
-        "DAY_DATABASE_NAME": "日",
-        "WEEK_DATABASE_NAME": "周",
-        "MONTH_DATABASE_NAME": "月",
-        "YEAR_DATABASE_NAME": "年",
-        "CATEGORY_DATABASE_NAME": "分类",
-        "AUTHOR_DATABASE_NAME": "作者",
-        "CHAPTER_DATABASE_NAME": "章节",
         "READ_DATABASE_NAME": "阅读记录",
     }
     database_id_dict = {}
     heatmap_block_id = None
-
+    property_dict = {}
     def __init__(self):
         self.client = Client(auth=os.getenv("NOTION_TOKEN"), log_level=logging.ERROR)
         self.__cache = {}
@@ -57,39 +48,27 @@ class NotionHelper:
         self.book_database_id = self.database_id_dict.get(
             self.database_name_dict.get("BOOK_DATABASE_NAME")
         )
-        self.review_database_id = self.database_id_dict.get(
-            self.database_name_dict.get("REVIEW_DATABASE_NAME")
-        )
-        self.bookmark_database_id = self.database_id_dict.get(
-            self.database_name_dict.get("BOOKMARK_DATABASE_NAME")
-        )
-        self.day_database_id = self.database_id_dict.get(
-            self.database_name_dict.get("DAY_DATABASE_NAME")
-        )
-        self.week_database_id = self.database_id_dict.get(
-            self.database_name_dict.get("WEEK_DATABASE_NAME")
-        )
-        self.month_database_id = self.database_id_dict.get(
-            self.database_name_dict.get("MONTH_DATABASE_NAME")
-        )
-        self.year_database_id = self.database_id_dict.get(
-            self.database_name_dict.get("YEAR_DATABASE_NAME")
-        )
-        self.category_database_id = self.database_id_dict.get(
-            self.database_name_dict.get("CATEGORY_DATABASE_NAME")
-        )
-        self.author_database_id = self.database_id_dict.get(
-            self.database_name_dict.get("AUTHOR_DATABASE_NAME")
-        )
-        self.chapter_database_id = self.database_id_dict.get(
-            self.database_name_dict.get("CHAPTER_DATABASE_NAME")
-        )
+        r = self.client.databases.retrieve(database_id=self.book_database_id)
+        for key,value in r.get("properties").items():
+            self.property_dict[key] = value
+        self.review_database_id = self.get_relation_database_id(self.property_dict.get("读书笔记"))
+        self.bookmark_database_id = self.get_relation_database_id(self.property_dict.get("划线"))
+        self.day_database_id = self.get_relation_database_id(self.property_dict.get("日"))
+        self.week_database_id = self.get_relation_database_id(self.property_dict.get("周"))
+        self.month_database_id = self.get_relation_database_id(self.property_dict.get("月"))
+        self.year_database_id = self.get_relation_database_id(self.property_dict.get("年"))
+        self.category_database_id = self.get_relation_database_id(self.property_dict.get("分类"))
+        self.author_database_id = self.get_relation_database_id(self.property_dict.get("作者"))
+        self.chapter_database_id = self.get_relation_database_id(self.property_dict.get("章节"))
         self.read_database_id = self.database_id_dict.get(
             self.database_name_dict.get("READ_DATABASE_NAME")
         )
         self.update_book_database()
         if self.read_database_id is None:
             self.create_database()
+
+    def get_relation_database_id(self,property):
+        return property.get('relation').get("database_id")
 
     def extract_page_id(self, notion_url):
         # 正则表达式匹配 32 个字符的 Notion page_id
