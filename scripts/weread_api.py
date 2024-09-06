@@ -7,6 +7,7 @@ import requests
 from requests.utils import cookiejar_from_dict
 from http.cookies import SimpleCookie
 from retrying import retry
+
 WEREAD_URL = "https://weread.qq.com/"
 WEREAD_NOTEBOOKS_URL = "https://i.weread.qq.com/user/notebooks"
 WEREAD_BOOKMARKLIST_URL = "https://i.weread.qq.com/book/bookmarklist"
@@ -17,14 +18,14 @@ WEREAD_BOOK_INFO = "https://i.weread.qq.com/book/info"
 WEREAD_READDATA_DETAIL = "https://i.weread.qq.com/readdata/detail"
 WEREAD_HISTORY_URL = "https://i.weread.qq.com/readdata/summary?synckey=0"
 
+
 class WeReadApi:
     def __init__(self):
         self.cookie = self.get_cookie()
         self.session = requests.Session()
         self.session.cookies = self.parse_cookie_string()
 
-
-    def try_get_cloud_cookie(self,url, id, password):
+    def try_get_cloud_cookie(self, url, id, password):
         if url.endswith("/"):
             url = url[:-1]
         req_url = f"{url}/get/{id}"
@@ -42,7 +43,6 @@ class WeReadApi:
                 result = cookie_str
         return result
 
-
     def get_cookie(self):
         url = os.getenv("CC_URL")
         if not url:
@@ -55,6 +55,7 @@ class WeReadApi:
         if not cookie or not cookie.strip():
             raise Exception("没有找到cookie，请按照文档填写cookie")
         return cookie
+
     def parse_cookie_string(self):
         cookie = SimpleCookie()
         cookie.load(self.cookie)
@@ -66,10 +67,12 @@ class WeReadApi:
                 cookies_dict, cookiejar=None, overwrite=True
             )
         return cookiejar
-    
+
     def get_bookshelf(self):
         self.session.get(WEREAD_URL)
-        r = self.session.get("https://i.weread.qq.com/shelf/sync?synckey=0&teenmode=0&album=1&onlyBookid=0")
+        r = self.session.get(
+            "https://i.weread.qq.com/shelf/sync?synckey=0&teenmode=0&album=1&onlyBookid=0"
+        )
         if r.ok:
             return r.json()
         else:
@@ -114,9 +117,23 @@ class WeReadApi:
     def get_read_info(self, bookId):
         self.session.get(WEREAD_URL)
         params = dict(
-            bookId=bookId, readingDetail=1, readingBookIndex=1, finishedDate=1
+            noteCount=1,
+            readingDetail=1,
+            finishedBookIndex=1,
+            readingBookCount=1,
+            readingBookIndex=1,
+            finishedBookCount=1,
+            bookId=bookId,
+            finishedDate=1,
         )
-        r = self.session.get(WEREAD_READ_INFO_URL, params=params)
+        headers = {
+            "baseapi":"32",
+            "appver":"8.2.5.10163885",
+            "basever":"8.2.5.10163885",
+            "osver":"12",
+            "User-Agent": "WeRead/8.2.5 WRBrand/xiaomi Dalvik/2.1.0 (Linux; U; Android 12; Redmi Note 7 Pro Build/SQ3A.220705.004)",
+        }
+        r = self.session.get(WEREAD_READ_INFO_URL,headers=headers, params=params)
         if r.ok:
             return r.json()
         else:
@@ -137,8 +154,8 @@ class WeReadApi:
             return reviews
         else:
             raise Exception(f"get {bookId} review list failed {r.text}")
-        
-    @retry(stop_max_attempt_number=3, wait_fixed=5000) 
+
+    @retry(stop_max_attempt_number=3, wait_fixed=5000)
     def get_api_data(self):
         r = self.session.get(WEREAD_HISTORY_URL)
         if not r.ok:
@@ -148,9 +165,9 @@ class WeReadApi:
             else:
                 raise Exception("Can not get weread history data")
         return r.json()
-    
-    @retry(stop_max_attempt_number=3, wait_fixed=5000) 
-    def get_chapter_info(self,bookId):
+
+    @retry(stop_max_attempt_number=3, wait_fixed=5000)
+    def get_chapter_info(self, bookId):
         self.session.get(WEREAD_URL)
         body = {"bookIds": [bookId], "synckeys": [0], "teenmode": 0}
         r = self.session.post(WEREAD_CHAPTER_INFO, json=body)
@@ -174,8 +191,8 @@ class WeReadApi:
             return {item["chapterUid"]: item for item in update}
         else:
             raise Exception(f"get {bookId} chapter info failed {r.text}")
-        
-    def transform_id(self,book_id):
+
+    def transform_id(self, book_id):
         id_length = len(book_id)
         if re.match("^\d*$", book_id):
             ary = []
@@ -188,8 +205,7 @@ class WeReadApi:
             result += format(ord(book_id[i]), "x")
         return "4", [result]
 
-
-    def calculate_book_str_id(self,book_id):
+    def calculate_book_str_id(self, book_id):
         md5 = hashlib.md5()
         md5.update(book_id.encode("utf-8"))
         digest = md5.hexdigest()
@@ -214,5 +230,6 @@ class WeReadApi:
         md5.update(result.encode("utf-8"))
         result += md5.hexdigest()[0:3]
         return result
-    def get_url(self,book_id):
+
+    def get_url(self, book_id):
         return f"https://weread.qq.com/web/reader/{self.calculate_book_str_id(book_id)}"

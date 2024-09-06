@@ -23,22 +23,23 @@ def get_douban_url(isbn):
     print(f"get_douban_url {isbn} ")
     params = {"query": isbn, "page": "1", "category": "book"}
     r = requests.get("https://neodb.social/api/catalog/search", params=params)
-    books = r.json().get("data")
-    if books is None or len(books) == 0:
-        return None
-    results = list(filter(lambda x: x.get("isbn") == isbn, books))
-    if len(results) == 0:
-        return None
-    result = results[0]
-    urls = list(
-        filter(
-            lambda x: x.get("url").startswith("https://book.douban.com"),
-            result.get("external_resources", []),
+    if r.ok:
+        books = r.json().get("data")
+        if books is None or len(books) == 0:
+            return None
+        results = list(filter(lambda x: x.get("isbn") == isbn, books))
+        if len(results) == 0:
+            return None
+        result = results[0]
+        urls = list(
+            filter(
+                lambda x: x.get("url").startswith("https://book.douban.com"),
+                result.get("external_resources", []),
+            )
         )
-    )
-    if len(urls) == 0:
-        return None
-    return urls[0].get("url")
+        if len(urls) == 0:
+            return None
+        return urls[0].get("url")
 
 
 def insert_book_to_notion(books, index, bookId):
@@ -117,7 +118,7 @@ def insert_book_to_notion(books, index, bookId):
             pendulum.from_timestamp(book.get("时间"), tz="Asia/Shanghai"),
         )
 
-    print(f"正在插入《{book.get('title')}》,一共{len(books)}本，当前是第{index+1}本。")
+    print(f"::notice::正在插入《{book.get('title')}》,一共{len(books)}本，当前是第{index+1}本。")
     parent = {"database_id": notion_helper.book_database_id, "type": "database_id"}
     result = None
     if bookId in notion_books:
