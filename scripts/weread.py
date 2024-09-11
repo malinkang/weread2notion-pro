@@ -174,6 +174,7 @@ def sort_notes(page_id, chapter, bookmark_list):
 def append_blocks(id, contents):
     print(f"笔记数{len(contents)}")
     before_block_id = ""
+    print(f"content = {contents}")
     block_children = notion_helper.get_block_children(id)
     if len(block_children) > 0 and block_children[0].get("type") == "table_of_contents":
         before_block_id = block_children[0].get("id")
@@ -205,8 +206,10 @@ def append_blocks(id, contents):
         else:
             blocks.append(content_to_block(content))
             sub_contents.append(content)
-
+    
     if len(blocks) > 0:
+        print(f"blocks = {blocks}")
+        print(f"before_block_id = {before_block_id}")
         l.extend(append_blocks_to_notion(id, blocks, before_block_id, sub_contents))
     for index, value in enumerate(l):
         print(f"正在插入第{index+1}条笔记，共{len(l)}条")
