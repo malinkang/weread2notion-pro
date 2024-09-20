@@ -17,6 +17,7 @@ from utils import (
 
 
 def get_bookmark_list(page_id, bookId):
+    print(f"Entering get_bookmark_list with page_id={page_id} and bookId={bookId}")
     """获取我的划线"""
     filter = {
         "and": [
@@ -39,8 +40,10 @@ def get_bookmark_list(page_id, bookId):
         if i.get("bookmarkId") in dict1:
             i["blockId"] = dict1.pop(i.get("bookmarkId"))
     for blockId in dict1.values():
+        print(f"Deleting block with blockId={blockId}")
         notion_helper.delete_block(blockId)
         notion_helper.delete_block(dict2.get(blockId))
+    print(f"Exiting get_bookmark_list with result={bookmarks}")
     return bookmarks
 
 
@@ -65,6 +68,7 @@ def get_review_list(page_id,bookId):
         if i.get("reviewId") in dict1:
             i["blockId"] = dict1.pop(i.get("reviewId"))
     for blockId in dict1.values():
+        print(f"Deleting block with blockId={blockId}")
         notion_helper.delete_block(blockId)
         notion_helper.delete_block(dict2.get(blockId))
     return reviews
@@ -72,13 +76,24 @@ def get_review_list(page_id,bookId):
 
 def check(bookId):
     """检查是否已经插入过"""
-    filter = {"property": "BookId", "rich_text": {"equals": bookId}}
-    response = notion_helper.query(
-        database_id=notion_helper.book_database_id, filter=filter
-    )
-    if len(response["results"]) > 0:
-        return response["results"][0]["id"]
-    return None
+    try:
+        # 创建过滤器
+        filter = {"property": "BookId", "rich_text": {"equals": bookId}}
+        
+        # 查询数据库
+        response = notion_helper.query(
+            database_id=notion_helper.book_database_id, filter=filter
+        )
+        
+        # 判断查询结果
+        if len(response["results"]) > 0:
+            return response["results"][0]["id"]
+        
+        return None
+    
+    except Exception as e:
+        print(f"Error querying the database: {e}")
+        return None
 
 
 def get_sort():
@@ -102,6 +117,7 @@ def get_sort():
 
 
 def download_image(url, save_dir="cover"):
+    print(f"Downloading image from {url} to {save_dir}")
     # 确保目录存在，如果不存在则创建
     if not os.path.exists(save_dir):
         os.makedirs(save_dir)
@@ -123,10 +139,12 @@ def download_image(url, save_dir="cover"):
         print(f"Image downloaded successfully to {save_path}")
     else:
         print(f"Failed to download image. Status code: {response.status_code}")
+    print(f"Response status code={response.status_code}")
     return save_path
 
 
 def sort_notes(page_id, chapter, bookmark_list):
+    print(f"Sorting notes with page_id={page_id}, chapter={chapter}, bookmark_list length={len(bookmark_list)}")
     """对笔记进行排序"""
     bookmark_list = sorted(
         bookmark_list,
@@ -164,17 +182,20 @@ def sort_notes(page_id, chapter, bookmark_list):
                 notes.append(chapter.get(key))
             notes.extend(value)
         for blockId in dict1.values():
+            print(f"Deleting block with blockId={blockId}")
             notion_helper.delete_block(blockId)
             notion_helper.delete_block(dict2.get(blockId))
     else:
         notes.extend(bookmark_list)
+    print(f"Sorted notes={notes}")
     return notes
 
 
 def append_blocks(id, contents):
+    print(f"Appending blocks with id={id}, contents length={len(contents)}")
     print(f"笔记数{len(contents)}")
-    before_block_id = ""
     print(f"content = {contents}")
+    before_block_id = ""
     block_children = notion_helper.get_block_children(id)
     if len(block_children) > 0 and block_children[0].get("type") == "table_of_contents":
         before_block_id = block_children[0].get("id")
@@ -189,6 +210,9 @@ def append_blocks(id, contents):
     for content in contents:
         if len(blocks) == 100:
             results = append_blocks_to_notion(id, blocks, before_block_id, sub_contents)
+            if results:
+                print("Error: append_blocks_to_notion returned None")
+                return
             before_block_id = results[-1].get("blockId")
             l.extend(results)
             blocks.clear()
@@ -207,18 +231,19 @@ def append_blocks(id, contents):
             blocks.append(content_to_block(content))
             sub_contents.append(content)
     
+    print(f"blocks = {blocks} , File' weread.py ' line 220 in append_blocks")
+    print(f"before_block_id = {before_block_id} , File' weread.py ' line 221 in append_blocks")
     if len(blocks) > 0:
-        print(f"blocks = {blocks}")
-        print(f"before_block_id = {before_block_id}")
         l.extend(append_blocks_to_notion(id, blocks, before_block_id, sub_contents))
     for index, value in enumerate(l):
-        print(f"正在插入第{index+1}条笔记，共{len(l)}条")
+        print(f"正在插入第{index+1}条笔记，共{len(l)}条 , File' weread.py ' line 216 in append_blocks")
         if "bookmarkId" in value:
             notion_helper.insert_bookmark(id, value)
         elif "reviewId" in value:
             notion_helper.insert_review(id, value)
         else:
             notion_helper.insert_chapter(id, value)
+    print(f"Blocks to append={blocks}")
 
 
 def content_to_block(content):
@@ -241,26 +266,38 @@ def content_to_block(content):
 
 
 def append_blocks_to_notion(id, blocks, after, contents):
-    response = notion_helper.append_blocks_after(
-        block_id=id, children=blocks, after=after
-    )
-    results = response.get("results")
-    l = []
-    for index, content in enumerate(contents):
-        result = results[index]
-        if content.get("abstract") != None and content.get("abstract") != "":
-            notion_helper.append_blocks(
-                block_id=result.get("id"), children=[get_quote(content.get("abstract"))]
-            )
-        content["blockId"] = result.get("id")
-        l.append(content)
-    return l
+    try:
+        response = notion_helper.append_blocks_after(
+                block_id=id, children=blocks, after=after
+        )
+        results = response.get("results")
+        if results is None:
+            print(f"Error: No results found in response for blocks={blocks} after={after}")
+            return []
+        l = []
+        for index, content in enumerate(contents):
+            result = results[index]
+            if content.get("abstract") != None and content.get("abstract") != "":
+                notion_helper.append_blocks(
+                    block_id=result.get("id"), children=[get_quote(content.get("abstract"))]
+                )
+            content["blockId"] = result.get("id")
+            l.append(content)
+        print(f"Returning from append_blocks_to_notion with l={l}")
+        return l
+    except requests.exceptions.HTTPError as e:
+        print(f"HTTP error occurred: {e}")
+        return []
+    except Exception as e:
+        print(f"An error occurred: {e}")
+        return []
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     options = parser.parse_args()
-    branch = os.getenv("REF").split("/")[-1]
+    #branch = os.getenv("REF").split("/")[-1]
+    branch = os.getenv("REF", "main").split("/")[-1]
     repository =  os.getenv("REPOSITORY")
     weread_api = WeReadApi()
     notion_helper = NotionHelper()
