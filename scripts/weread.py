@@ -270,7 +270,7 @@ if __name__ == "__main__":
     if books != None:
         for index, book in enumerate(books):
             bookId = book.get("bookId")
-            title = book.get("book").get("title")
+            title = book.get("book").get("title").replace(",", "")  # 去掉书籍标题中的逗号
             sort = book.get("sort")
             if bookId not in notion_books:
                 continue
