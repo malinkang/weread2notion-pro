@@ -112,6 +112,9 @@ def insert_book_to_notion(books, index, bookId):
                 for x in book.get("categories")
             ]
     properties = utils.get_properties(book, book_properties_type_dict)
+    # 调用函数移除逗号
+    properties = remove_commas_from_select_options(properties)
+    
     if book.get("时间"):
         notion_helper.get_date_relation(
             properties,
@@ -184,6 +187,21 @@ def insert_to_notion(page_id, timestamp, duration, book_database_id):
             icon=utils.get_icon("https://www.notion.so/icons/target_red.svg"),
             properties=properties,
         )
+def remove_commas_from_select_options(properties):
+    """
+    遍历属性字典中的所有值，移除 select 和 multi_select 字段中的逗号。
+    """
+    for key, value in properties.items():
+        if isinstance(value, dict):
+            if "select" in value:
+                # 移除 select 字段中的逗号
+                value["select"]["name"] = value["select"]["name"].replace(",", "")
+            elif "multi_select" in value:
+                # 对 multi_select 字段的每一项进行处理
+                value["multi_select"] = [
+                    {"name": option["name"].replace(",", "")} for option in value["multi_select"]
+                ]
+    return properties
 
 
 if __name__ == "__main__":
