@@ -57,15 +57,18 @@ class WeReadApi:
         return cookie
 
     def parse_cookie_string(self):
-        cookie = SimpleCookie()
-        cookie.load(self.cookie)
         cookies_dict = {}
-        cookiejar = None
-        for key, morsel in cookie.items():
-            cookies_dict[key] = morsel.value
-            cookiejar = cookiejar_from_dict(
-                cookies_dict, cookiejar=None, overwrite=True
-            )
+        
+        # 使用正则表达式解析 cookie 字符串
+        pattern = re.compile(r'([^=]+)=([^;]+);?\s*')
+        matches = pattern.findall(self.cookie)
+        
+        for key, value in matches:
+            cookies_dict[key] = value
+        
+        # 直接使用 cookies_dict 创建 cookiejar
+        cookiejar = cookiejar_from_dict(cookies_dict)
+        
         return cookiejar
 
     def get_bookshelf(self):
