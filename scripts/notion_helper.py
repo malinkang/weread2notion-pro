@@ -358,6 +358,10 @@ class NotionHelper:
 
     @retry(stop_max_attempt_number=3, wait_fixed=5000)
     def append_blocks_after(self, block_id, children, after):
+        #奇怪不知道为什么会多插入一个children，没找到问题，先暂时这么解决，搜索是否有parent
+        parent = self.client.blocks.retrieve(after).get("parent")
+        if(parent.get("type")=="block_id"):
+            after = parent.get("block_id")
         return self.client.blocks.children.append(
             block_id=block_id, children=children, after=after
         )
