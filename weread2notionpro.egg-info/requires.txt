@@ -1,5 +1,0 @@
-requests
-pendulum
-retrying
-notion-client
-github-heatmap

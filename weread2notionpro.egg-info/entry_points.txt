@@ -1,4 +1,0 @@
-[console_scripts]
-book = weread2notionpro.book:main
-read_time = weread2notionpro.read_time:main
-weread = weread2notionpro.weread:main
