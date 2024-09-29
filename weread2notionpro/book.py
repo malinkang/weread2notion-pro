@@ -1,15 +1,12 @@
-import argparse
-from datetime import datetime, timedelta
 import os
-
 import pendulum
 import requests
-from notion_helper import NotionHelper
-
-from weread_api import WeReadApi
-import utils
-from config import book_properties_type_dict, tz
+from weread2notionpro.notion_helper import NotionHelper
+from weread2notionpro.weread_api import WeReadApi
+from weread2notionpro import utils
+from weread2notionpro.config import book_properties_type_dict, tz
 from retrying import retry
+
 
 TAG_ICON_URL = "https://www.notion.so/icons/tag_gray.svg"
 USER_ICON_URL = "https://www.notion.so/icons/user-circle-filled_gray.svg"
@@ -18,28 +15,6 @@ BOOK_ICON_URL = "https://www.notion.so/icons/book_gray.svg"
 rating = {"poor": "⭐️", "fair": "⭐️⭐️⭐️", "good": "⭐️⭐️⭐️⭐️⭐️"}
 
 
-@retry(stop_max_attempt_number=3, wait_fixed=5000)
-def get_douban_url(isbn):
-    print(f"get_douban_url {isbn} ")
-    params = {"query": isbn, "page": "1", "category": "book"}
-    r = requests.get("https://neodb.social/api/catalog/search", params=params)
-    if r.ok:
-        books = r.json().get("data")
-        if books is None or len(books) == 0:
-            return None
-        results = list(filter(lambda x: x.get("isbn") == isbn, books))
-        if len(results) == 0:
-            return None
-        result = results[0]
-        urls = list(
-            filter(
-                lambda x: x.get("url").startswith("https://book.douban.com"),
-                result.get("external_resources", []),
-            )
-        )
-        if len(urls) == 0:
-            return None
-        return urls[0].get("url")
 
 
 def insert_book_to_notion(books, index, bookId):
@@ -89,10 +64,10 @@ def insert_book_to_notion(books, index, bookId):
         cover = BOOK_ICON_URL
     if bookId not in notion_books:
         isbn = book.get("isbn")
-        if isbn and isbn.strip():
-            douban_url = get_douban_url(isbn)
-            if douban_url:
-                book["douban_url"] = douban_url
+        # if isbn and isbn.strip():
+            # douban_url = get_douban_url(isbn)
+            # if douban_url:
+            #     book["douban_url"] = douban_url
         book["书名"] = book.get("title")
         book["BookId"] = book.get("bookId")
         book["ISBN"] = book.get("isbn")
@@ -118,7 +93,9 @@ def insert_book_to_notion(books, index, bookId):
             pendulum.from_timestamp(book.get("时间"), tz="Asia/Shanghai"),
         )
 
-    print(f"::notice::正在插入《{book.get('title')}》,一共{len(books)}本，当前是第{index+1}本。")
+    print(
+        f"::notice::正在插入《{book.get('title')}》,一共{len(books)}本，当前是第{index+1}本。"
+    )
     parent = {"database_id": notion_helper.book_database_id, "type": "database_id"}
     result = None
     if bookId in notion_books:
@@ -186,9 +163,13 @@ def insert_to_notion(page_id, timestamp, duration, book_database_id):
         )
 
 
-if __name__ == "__main__":
-    weread_api = WeReadApi()
-    notion_helper = NotionHelper()
+weread_api = WeReadApi()
+notion_helper = NotionHelper()
+archive_dict = {}
+notion_books = []
+
+
+def main():
     notion_books = notion_helper.get_all_book()
     bookshelf_books = weread_api.get_bookshelf()
     bookProgress = bookshelf_books.get("bookProgress")
@@ -220,3 +201,7 @@ if __name__ == "__main__":
     books = list((set(notebooks) | set(books)) - set(not_need_sync))
     for index, bookId in enumerate(books):
         insert_book_to_notion(books, index, bookId)
+
+
+if __name__ == "__main__":
+    main()

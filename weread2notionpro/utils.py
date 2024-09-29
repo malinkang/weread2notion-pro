@@ -6,7 +6,7 @@ import os
 import re
 import requests
 import base64
-from config import (
+from weread2notionpro.config  import (
     RICH_TEXT,
     URL,
     RELATION,
@@ -315,7 +315,7 @@ def calculate_book_str_id(book_id):
 
 def transform_id(book_id):
     id_length = len(book_id)
-    if re.match("^\d*$", book_id):
+    if re.match("^\\d*$", book_id):
         ary = []
         for i in range(0, id_length, 9):
             ary.append(format(int(book_id[i : min(i + 9, id_length)]), "x"))

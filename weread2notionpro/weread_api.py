@@ -1,13 +1,10 @@
 import hashlib
-from http.cookies import SimpleCookie
 import os
 import re
 
 import requests
 from requests.utils import cookiejar_from_dict
-from http.cookies import SimpleCookie
 from retrying import retry
-
 WEREAD_URL = "https://weread.qq.com/"
 WEREAD_NOTEBOOKS_URL = "https://i.weread.qq.com/user/notebooks"
 WEREAD_BOOKMARKLIST_URL = "https://i.weread.qq.com/book/bookmarklist"
@@ -197,7 +194,7 @@ class WeReadApi:
 
     def transform_id(self, book_id):
         id_length = len(book_id)
-        if re.match("^\d*$", book_id):
+        if re.match("^\\d*$", book_id):
             ary = []
             for i in range(0, id_length, 9):
                 ary.append(format(int(book_id[i : min(i + 9, id_length)]), "x"))

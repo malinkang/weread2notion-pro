@@ -68,5 +68,5 @@ jobs:
           git push || echo "nothing to push"
       - name: read time sync
         run: |
-          python -u scripts/read_time.py
+          read_time
       

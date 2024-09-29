@@ -1,11 +1,7 @@
-import argparse
-import os
-import requests
+from weread2notionpro.notion_helper import NotionHelper
+from weread2notionpro.weread_api import WeReadApi
 
-from notion_helper import NotionHelper
-from weread_api import WeReadApi
-
-from utils import (
+from weread2notionpro.utils import (
     get_callout,
     get_heading,
     get_number,
@@ -229,14 +225,9 @@ def append_blocks_to_notion(id, blocks, after, contents):
         l.append(content)
     return l
 
-
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
-    options = parser.parse_args()
-    branch = os.getenv("REF").split("/")[-1]
-    repository =  os.getenv("REPOSITORY")
-    weread_api = WeReadApi()
-    notion_helper = NotionHelper()
+weread_api = WeReadApi()
+notion_helper = NotionHelper()
+def main():
     notion_books = notion_helper.get_all_book()
     books = weread_api.get_notebooklist()
     if books != None:
@@ -260,3 +251,7 @@ if __name__ == "__main__":
                 "Sort":get_number(sort)
             }
             notion_helper.update_book_page(page_id=pageId,properties=properties)
+
+if __name__ == "__main__":
+    main()
+
