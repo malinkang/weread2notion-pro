@@ -64,10 +64,6 @@ def insert_book_to_notion(books, index, bookId):
         cover = BOOK_ICON_URL
     if bookId not in notion_books:
         isbn = book.get("isbn")
-        # if isbn and isbn.strip():
-            # douban_url = get_douban_url(isbn)
-            # if douban_url:
-            #     book["douban_url"] = douban_url
         book["书名"] = book.get("title")
         book["BookId"] = book.get("bookId")
         book["ISBN"] = book.get("isbn")
