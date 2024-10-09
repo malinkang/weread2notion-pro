@@ -20,7 +20,7 @@
 
 | 微信群 | QQ群 |
 | --- | --- |
-| <div align="center"><img src="https://images.malinkang.com/2024/09/91852e62db8485d877e31bd8a14083a1.jpeg" ></div> | <div align="center"><img src="https://images.malinkang.com/2024/09/91852e62db8485d877e31bd8a14083a1.jpeg" width="50%"></div> |
+| <div align="center"><img src="https://images.malinkang.com/2024/10/2dfe1f98391e7bd2ee03879e788e5649.jpg" ></div> | <div align="center"><img src="https://images.malinkang.com/2024/10/f6d61b082e78f001cff8ab0a21344fe9.jpeg" width="50%"></div> |
 
 
 ## 捐赠
