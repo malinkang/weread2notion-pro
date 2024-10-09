@@ -1,10 +1,13 @@
 import hashlib
+import json
 import os
 import re
 
 import requests
 from requests.utils import cookiejar_from_dict
 from retrying import retry
+from urllib.parse import quote
+
 WEREAD_URL = "https://weread.qq.com/"
 WEREAD_NOTEBOOKS_URL = "https://i.weread.qq.com/user/notebooks"
 WEREAD_BOOKMARKLIST_URL = "https://i.weread.qq.com/book/bookmarklist"
@@ -61,8 +64,7 @@ class WeReadApi:
         matches = pattern.findall(self.cookie)
         
         for key, value in matches:
-            cookies_dict[key] = value
-        
+            cookies_dict[key] = quote(value)
         # 直接使用 cookies_dict 创建 cookiejar
         cookiejar = cookiejar_from_dict(cookies_dict)
         
@@ -108,6 +110,8 @@ class WeReadApi:
         params = dict(bookId=bookId)
         r = self.session.get(WEREAD_BOOKMARKLIST_URL, params=params)
         if r.ok:
+            with open("bookmark.json","w") as f:
+                f.write(json.dumps(r.json(),indent=4,ensure_ascii=False))
             bookmarks = r.json().get("updated")
             return bookmarks
         else:

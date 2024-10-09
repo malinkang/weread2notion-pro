@@ -4,6 +4,7 @@ import re
 import time
 
 from notion_client import Client
+import pendulum
 from retrying import retry
 from datetime import timedelta
 from weread2notionpro.utils  import (
@@ -40,10 +41,13 @@ class NotionHelper:
         "AUTHOR_DATABASE_NAME": "作者",
         "CHAPTER_DATABASE_NAME": "章节",
         "READ_DATABASE_NAME": "阅读记录",
+        "SETTING_DATABASE_NAME": "设置",
     }
     database_id_dict = {}
     heatmap_block_id = None
-
+    show_color = True
+    block_type = "callout"
+    sync_bookmark = True
     def __init__(self):
         self.client = Client(auth=os.getenv("NOTION_TOKEN"), log_level=logging.ERROR)
         self.__cache = {}
@@ -84,10 +88,17 @@ class NotionHelper:
         )
         self.read_database_id = self.database_id_dict.get(
             self.database_name_dict.get("READ_DATABASE_NAME")
+        )  
+        self.setting_database_id = self.database_id_dict.get(
+            self.database_name_dict.get("SETTING_DATABASE_NAME")
         )
         self.update_book_database()
         if self.read_database_id is None:
             self.create_database()
+        if self.setting_database_id is None:
+            self.create_setting_database()
+        if self.setting_database_id:
+            self.insert_to_setting_database()
 
     def extract_page_id(self, notion_url):
         # 正则表达式匹配 32 个字符的 Notion page_id
@@ -148,8 +159,6 @@ class NotionHelper:
         ):
             update_properties["豆瓣短评"] = {"rich_text": {}}
         """NeoDB先不添加了，现在受众还不广，可能有的小伙伴不知道是干什么的"""
-        # if properties.get("NeoDB链接") is None or properties.get("NeoDB链接").get("type") != "url":
-        #     update_properties["NeoDB链接"] = {"url": {}}
         if len(update_properties) > 0:
             self.client.databases.update(database_id=id, properties=update_properties)
 
@@ -180,7 +189,79 @@ class NotionHelper:
             title=title,
             icon=get_icon("https://www.notion.so/icons/target_gray.svg"),
             properties=properties,
+        ).get("id")    
+        
+    def create_setting_database(self):
+        title = [
+            {
+                "type": "text",
+                "text": {
+                    "content": self.database_name_dict.get("SETTING_DATABASE_NAME"),
+                },
+            },
+        ]
+        properties = {
+            "标题": {"title": {}},
+            "NotinToken": {"rich_text": {}},
+            "NotinPage": {"rich_text": {}},
+            "WeReadCookie": {"rich_text": {}},
+            "根据划线颜色设置文字颜色": {"checkbox": {}},
+            "同步书签": {"checkbox": {}},
+            # "Cookie状态": {
+            #     "select": {
+            #         "options": [
+            #             {"name": "可用", "color": "green"},
+            #             {"name": "过期", "color": "red"},
+            #         ]
+            #     }
+            # },
+            "样式": {
+                "select": {
+                    "options": [
+                        {"name": "callout", "color": "blue"},
+                        {"name": "quote", "color": "green"},
+                        {"name": "paragraph", "color": "purple"},
+                        {"name": "bulleted_list_item", "color": "yellow"},
+                        {"name": "numbered_list_item", "color": "pink"},
+                    ]
+                }
+            },
+            "最后同步时间": {"date": {}},
+        }
+        parent = parent = {"page_id": self.page_id, "type": "page_id"}
+        self.setting_database_id = self.client.databases.create(
+            parent=parent,
+            title=title,
+            icon=get_icon("https://www.notion.so/icons/gear_gray.svg"),
+            properties=properties,
         ).get("id")
+
+    def insert_to_setting_database(self):
+        existing_pages = self.query(database_id=self.setting_database_id, filter={"property": "标题", "title": {"equals": "设置"}}).get("results")
+        properties = {
+            "标题": {"title": [{"type": "text", "text": {"content": "设置"}}]},
+            "最后同步时间": {"date": {"start": pendulum.now("Asia/Shanghai").isoformat()}},
+            "NotinToken": {"rich_text": [{"type": "text", "text": {"content": os.getenv("NOTION_TOKEN")}}]},
+            "NotinPage": {"rich_text": [{"type": "text", "text": {"content": os.getenv("NOTION_PAGE")}}]},
+            "WeReadCookie": {"rich_text": [{"type": "text", "text": {"content": os.getenv("WEREAD_COOKIE")}}]},
+        }
+        if existing_pages:
+            remote_properties = existing_pages[0].get("properties")
+            self.show_color = get_property_value(remote_properties.get("根据划线颜色设置文字颜色"))
+            self.sync_bookmark = get_property_value(remote_properties.get("同步书签"))
+            self.block_type = get_property_value(remote_properties.get("样式"))
+            page_id = existing_pages[0].get("id")
+            self.client.pages.update(page_id=page_id, properties=properties)
+        else:
+            properties["根据划线颜色设置文字颜色"] = {"checkbox": True}
+            properties["同步书签"] = {"checkbox": True}
+            properties["样式"] = {"select": {"name": "callout"}}
+            self.client.pages.create(
+                parent={"database_id": self.setting_database_id},
+                properties=properties,
+            )
+  
+        
 
     def update_heatmap(self, block_id, url):
         # 更新 image block 的链接
@@ -329,6 +410,7 @@ class NotionHelper:
         return self.client.pages.update(
             page_id=page_id, properties=properties, cover=cover
         )
+
 
     @retry(stop_max_attempt_number=3, wait_fixed=5000)
     def create_page(self, parent, properties, icon):

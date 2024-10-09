@@ -114,31 +114,23 @@ def get_quote(content):
     }
 
 
-def get_callout(content, style, colorStyle, reviewId):
-    # 根据不同的划线样式设置不同的emoji 直线type=0 背景颜色是1 波浪线是2
-    emoji = "〰️"
-    if style == 0:
-        emoji = "💡"
-    elif style == 1:
-        emoji = "⭐"
-    # 如果reviewId不是空说明是笔记
-    if reviewId != None:
-        emoji = "✍️"
+def get_block(content,type,show_color, style, colorStyle, reviewId):
     color = "default"
-    # 根据划线颜色设置文字的颜色
-    if colorStyle == 1:
-        color = "red"
-    elif colorStyle == 2:
-        color = "purple"
-    elif colorStyle == 3:
-        color = "blue"
-    elif colorStyle == 4:
-        color = "green"
-    elif colorStyle == 5:
-        color = "yellow"
-    return {
-        "type": "callout",
-        "callout": {
+    if show_color:
+        # 根据划线颜色设置文字的颜色
+        if colorStyle == 1:
+            color = "red"
+        elif colorStyle == 2:
+            color = "purple"
+        elif colorStyle == 3:
+            color = "blue"
+        elif colorStyle == 4:
+            color = "green"
+        elif colorStyle == 5:
+            color = "yellow"
+    block = {
+        "type": type,
+        type: {
             "rich_text": [
                 {
                     "type": "text",
@@ -147,10 +139,23 @@ def get_callout(content, style, colorStyle, reviewId):
                     },
                 }
             ],
-            "icon": {"emoji": emoji},
             "color": color,
         },
     }
+    if(type=="callout"):
+        # 根据不同的划线样式设置不同的emoji 直线type=0 背景颜色是1 波浪线是2
+        emoji = "〰️"
+        if style == 0:
+            emoji = "💡"
+        elif style == 1:
+            emoji = "⭐"
+        # 如果reviewId不是空说明是笔记
+        if reviewId != None:
+            emoji = "✍️"
+        print(f"emoji = {emoji}")
+        block[type]["icon"] = {"emoji": emoji}
+    print(f"block = {block}")
+    return block
 
 
 def get_rich_text_from_result(result, name):
@@ -215,7 +220,6 @@ def get_first_and_last_day_of_week(date):
     last_day_of_week = first_day_of_week + timedelta(days=6)
 
     return first_day_of_week, last_day_of_week
-
 
 def get_properties(dict1, dict2):
     properties = {}
@@ -287,48 +291,6 @@ def get_property_value(property):
         return content
 
 
-def calculate_book_str_id(book_id):
-    md5 = hashlib.md5()
-    md5.update(book_id.encode("utf-8"))
-    digest = md5.hexdigest()
-    result = digest[0:3]
-    code, transformed_ids = transform_id(book_id)
-    result += code + "2" + digest[-2:]
-
-    for i in range(len(transformed_ids)):
-        hex_length_str = format(len(transformed_ids[i]), "x")
-        if len(hex_length_str) == 1:
-            hex_length_str = "0" + hex_length_str
-
-        result += hex_length_str + transformed_ids[i]
-
-        if i < len(transformed_ids) - 1:
-            result += "g"
-
-    if len(result) < 20:
-        result += digest[0 : 20 - len(result)]
-    md5 = hashlib.md5()
-    md5.update(result.encode("utf-8"))
-    result += md5.hexdigest()[0:3]
-    return result
-
-
-def transform_id(book_id):
-    id_length = len(book_id)
-    if re.match("^\\d*$", book_id):
-        ary = []
-        for i in range(0, id_length, 9):
-            ary.append(format(int(book_id[i : min(i + 9, id_length)]), "x"))
-        return "3", ary
-
-    result = ""
-    for i in range(id_length):
-        result += format(ord(book_id[i]), "x")
-    return "4", [result]
-
-
-def get_weread_url(book_id):
-    return f"https://weread.qq.com/web/reader/{calculate_book_str_id(book_id)}"
 
 
 def str_to_timestamp(date):
@@ -399,10 +361,6 @@ def download_image(url, save_dir="cover"):
         print(f"Failed to download image. Status code: {response.status_code}")
     return save_path
 
-
-def upload_cover(url):
-    cover_file = download_image(url)
-    return upload_image("cover", f"{cover_file.split('/')[-1]}", cover_file)
 
 
 def get_embed(url):

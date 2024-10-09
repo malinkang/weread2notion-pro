@@ -1,19 +1,13 @@
-import os
 import pendulum
-import requests
 from weread2notionpro.notion_helper import NotionHelper
 from weread2notionpro.weread_api import WeReadApi
 from weread2notionpro import utils
 from weread2notionpro.config import book_properties_type_dict, tz
-from retrying import retry
-
 
 TAG_ICON_URL = "https://www.notion.so/icons/tag_gray.svg"
 USER_ICON_URL = "https://www.notion.so/icons/user-circle-filled_gray.svg"
 BOOK_ICON_URL = "https://www.notion.so/icons/book_gray.svg"
-
 rating = {"poor": "⭐️", "fair": "⭐️⭐️⭐️", "good": "⭐️⭐️⭐️⭐️⭐️"}
-
 
 
 
@@ -49,25 +43,21 @@ def insert_book_to_notion(books, index, bookId):
         book["我的评分"] = rating.get(book.get("newRatingDetail").get("myRating"))
     elif status == "已读":
         book["我的评分"] = "未评分"
-    date = None
-    if book.get("finishedDate"):
-        date = book.get("finishedDate")
-    elif book.get("lastReadingDate"):
-        date = book.get("lastReadingDate")
-    elif book.get("readingBookDate"):
-        date = book.get("readingBookDate")
-    book["时间"] = date
+    book["时间"] = (
+        book.get("finishedDate")
+        or book.get("lastReadingDate")
+        or book.get("readingBookDate")
+    )
     book["开始阅读时间"] = book.get("beginReadingDate")
     book["最后阅读时间"] = book.get("lastReadingDate")
     cover = book.get("cover").replace("/s_", "/t7_")
     if not cover and not cover.strip() and not cover.startswith("http"):
         cover = BOOK_ICON_URL
     if bookId not in notion_books:
-        isbn = book.get("isbn")
         book["书名"] = book.get("title")
         book["BookId"] = book.get("bookId")
         book["ISBN"] = book.get("isbn")
-        book["链接"] = utils.get_weread_url(bookId)
+        book["链接"] = weread_api.get_url(bookId)
         book["简介"] = book.get("intro")
         book["作者"] = [
             notion_helper.get_relation_id(
@@ -90,7 +80,7 @@ def insert_book_to_notion(books, index, bookId):
         )
 
     print(
-        f"::notice::正在插入《{book.get('title')}》,一共{len(books)}本，当前是第{index+1}本。"
+        f"正在插入《{book.get('title')}》,一共{len(books)}本，当前是第{index+1}本。"
     )
     parent = {"database_id": notion_helper.book_database_id, "type": "database_id"}
     result = None
@@ -162,15 +152,16 @@ def insert_to_notion(page_id, timestamp, duration, book_database_id):
 weread_api = WeReadApi()
 notion_helper = NotionHelper()
 archive_dict = {}
-notion_books = []
+notion_books = {}
 
 
 def main():
+    global notion_books
+    global archive_dict
     notion_books = notion_helper.get_all_book()
     bookshelf_books = weread_api.get_bookshelf()
     bookProgress = bookshelf_books.get("bookProgress")
     bookProgress = {book.get("bookId"): book for book in bookProgress}
-    archive_dict = {}
     for archive in bookshelf_books.get("archive"):
         name = archive.get("name")
         bookIds = archive.get("bookIds")

@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name="weread2notionpro",
-    version="0.1.1",
+    version="0.1.3",
     packages=find_packages(),
     install_requires=[
         "requests",
