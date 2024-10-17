@@ -158,8 +158,8 @@ notion_books = {}
 def main():
     global notion_books
     global archive_dict
-    notion_books = notion_helper.get_all_book()
     bookshelf_books = weread_api.get_bookshelf()
+    notion_books = notion_helper.get_all_book()
     bookProgress = bookshelf_books.get("bookProgress")
     bookProgress = {book.get("bookId"): book for book in bookProgress}
     for archive in bookshelf_books.get("archive"):

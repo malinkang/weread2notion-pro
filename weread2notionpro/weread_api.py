@@ -64,7 +64,7 @@ class WeReadApi:
         matches = pattern.findall(self.cookie)
         
         for key, value in matches:
-            cookies_dict[key] = quote(value)
+            cookies_dict[key] = value.encode('unicode_escape').decode('ascii')
         # 直接使用 cookies_dict 创建 cookiejar
         cookiejar = cookiejar_from_dict(cookies_dict)
         
@@ -78,7 +78,13 @@ class WeReadApi:
         if r.ok:
             return r.json()
         else:
+            errcode = r.json().get("errcode",0)
+            self.handle_errcode(errcode)
             raise Exception(f"Could not get bookshelf {r.text}")
+        
+    def handle_errcode(self,errcode):
+        if( errcode== -2012 or errcode==-2010):
+            print(f"::error::微信读书Cookie过期了，请参考文档重新设置。https://mp.weixin.qq.com/s/B_mqLUZv7M1rmXRsMlBf7A")
 
     @retry(stop_max_attempt_number=3, wait_fixed=5000)
     def get_notebooklist(self):
@@ -91,6 +97,8 @@ class WeReadApi:
             books.sort(key=lambda x: x["sort"])
             return books
         else:
+            errcode = r.json().get("errcode",0)
+            self.handle_errcode(errcode)
             raise Exception(f"Could not get notebook list {r.text}")
 
     @retry(stop_max_attempt_number=3, wait_fixed=5000)
@@ -102,7 +110,10 @@ class WeReadApi:
         if r.ok:
             return r.json()
         else:
-            return None
+            errcode = r.json().get("errcode",0)
+            self.handle_errcode(errcode)
+            print(f"Could not get book info {r.text}")
+
 
     @retry(stop_max_attempt_number=3, wait_fixed=5000)
     def get_bookmark_list(self, bookId):
@@ -115,6 +126,8 @@ class WeReadApi:
             bookmarks = r.json().get("updated")
             return bookmarks
         else:
+            errcode = r.json().get("errcode",0)
+            self.handle_errcode(errcode)
             raise Exception(f"Could not get {bookId} bookmark list")
 
     @retry(stop_max_attempt_number=3, wait_fixed=5000)
@@ -141,6 +154,8 @@ class WeReadApi:
         if r.ok:
             return r.json()
         else:
+            errcode = r.json().get("errcode",0)
+            self.handle_errcode(errcode)
             raise Exception(f"get {bookId} read info failed {r.text}")
 
     @retry(stop_max_attempt_number=3, wait_fixed=5000)
@@ -157,18 +172,24 @@ class WeReadApi:
             ]
             return reviews
         else:
+            errcode = r.json().get("errcode",0)
+            self.handle_errcode(errcode)
             raise Exception(f"get {bookId} review list failed {r.text}")
 
-    @retry(stop_max_attempt_number=3, wait_fixed=5000)
+
+
+    
     def get_api_data(self):
+        self.session.get(WEREAD_URL)
         r = self.session.get(WEREAD_HISTORY_URL)
-        if not r.ok:
-            if r.json()["errcode"] == -2012:
-                self.session.get(WEREAD_URL)
-                r = self.session.get(WEREAD_HISTORY_URL)
-            else:
-                raise Exception("Can not get weread history data")
-        return r.json()
+        if r.ok:
+            return r.json()
+        else:
+            errcode = r.json().get("errcode",0)
+            self.handle_errcode(errcode)
+            raise Exception(f"get history data failed {r.text}")
+
+    
 
     @retry(stop_max_attempt_number=3, wait_fixed=5000)
     def get_chapter_info(self, bookId):
