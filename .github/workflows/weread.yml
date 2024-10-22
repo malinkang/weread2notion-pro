@@ -32,7 +32,7 @@ jobs:
       REPOSITORY: ${{ github.repository }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
@@ -43,8 +43,8 @@ jobs:
           pip install -r requirements.txt
       - name: weread book sync
         run: |
-          python -u scripts/book.py
+          book
       - name: weread sync
         run: |
-          python -u scripts/weread.py
+          weread
       
