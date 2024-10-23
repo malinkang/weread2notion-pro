@@ -5,7 +5,7 @@ import time
 
 from notion_client import Client
 from retrying import retry
-from datetime import timedelta
+from datetime import timedelta, datetime
 from dotenv import load_dotenv
 from utils import (
     format_date,
@@ -37,9 +37,9 @@ class NotionHelper:
         "BOOK_DATABASE_NAME": "文献笔记",
         "REVIEW_DATABASE_NAME": "笔记",
         "BOOKMARK_DATABASE_NAME": "划线",
-        "DAY_DATABASE_NAME": "每日工作",
-        "WEEK_DATABASE_NAME": "每周工作",
-        "MONTH_DATABASE_NAME": "每月工作",
+        "DAY_DATABASE_NAME": "日",
+        "WEEK_DATABASE_NAME": "周",
+        "MONTH_DATABASE_NAME": "月",
         "YEAR_DATABASE_NAME": "年",
         "CATEGORY_DATABASE_NAME": "分类",
         "AUTHOR_DATABASE_NAME": "作者",
@@ -50,7 +50,7 @@ class NotionHelper:
     heatmap_block_id = None
 
     def __init__(self):
-        # os.environ['NOTION_PAGE'] = 'd91e1d17-1a03-4165-af8c-7cf49e185dcd'
+        print("notion helper开始初始化", datetime.now())
         self.client = Client(auth=os.getenv("NOTION_TOKEN"), log_level=logging.ERROR)
         self.__cache = {}
         self.page_id = self.extract_page_id(os.getenv("NOTION_PAGE"))
@@ -94,6 +94,7 @@ class NotionHelper:
         self.update_book_database()
         if self.read_database_id is None:
             self.create_database()
+        print("notion helper完成初始化", datetime.now())
 
     def extract_page_id(self, notion_url):
         # 正则表达式匹配 32 个字符的 Notion page_id
@@ -223,10 +224,9 @@ class NotionHelper:
         day = new_date.strftime("%Y-%m-%d")
 
         properties = {}
-        return self.get_relation_id(
-            day, self.day_database_id, DATE_EMOJ_ICON, properties
+        return self.get_reltion_id_by_property(
+            "【兼容】日期", day, "date", self.day_database_id, DATE_EMOJ_ICON, properties
         )
-
     def get_day_relation_id_old(self, date):
         new_date = date.replace(hour=0, minute=0, second=0, microsecond=0)
         timestamp = (new_date - timedelta(hours=8)).timestamp()
@@ -266,6 +266,25 @@ class NotionHelper:
             page_id = self.client.pages.create(
                 parent=parent, properties=properties, icon=get_icon(icon)
             ).get("id")
+        else:
+            page_id = response.get("results")[0].get("id")
+        self.__cache[key] = page_id
+        return page_id
+
+    def get_reltion_id_by_property(self, property_name, property_value, property_type,
+                                   id, icon, properties = {}):
+        key = f"{id}{property_name}-{property_value}"
+        if key in self.__cache:
+            return self.__cache.get(key)
+        filter = {"property": property_name, property_type: {"equals": property_value}}
+        response = self.client.databases.query(database_id=id, filter=filter)
+        if len(response.get("results")) == 0:
+            raise Exception("未找到该日期")
+            #parent = {"database_id": id, "type": "database_id"}
+            #properties["标题"] = get_title(name)
+            #page_id = self.client.pages.create(
+            #    parent=parent, properties=properties, icon=get_icon(icon)
+            #).get("id")
         else:
             page_id = response.get("results")[0].get("id")
         self.__cache[key] = page_id
@@ -382,7 +401,9 @@ class NotionHelper:
     @retry(stop_max_attempt_number=3, wait_fixed=5000)
     def get_all_book(self):
         """从Notion中获取所有的书籍"""
+        print("从notion拉取所有书籍开始： ", datetime.now())
         results = self.query_all(self.book_database_id)
+        #filter = {"property": "类型", "relation": {"contains": page_id}}
         books_dict = {}
         for result in results:
             bookId = get_property_value(result.get("properties").get("BookId"))
@@ -398,13 +419,14 @@ class NotionHelper:
                 "douban_url": get_property_value(
                     result.get("properties").get("豆瓣链接")
                 ),
-                "cover": result.get("cover"),
+                "cover": result.get("cover"),#Notion里已无这个字段,
                 "myRating": get_property_value(
                     result.get("properties").get("我的评分")
                 ),
                 "comment": get_property_value(result.get("properties").get("豆瓣短评")),
                 "status": get_property_value(result.get("properties").get("阅读状态")),
             }
+        print("从notion拉取所有书籍结束： ", datetime.now())
         return books_dict
 
     @retry(stop_max_attempt_number=3, wait_fixed=5000)
@@ -431,6 +453,7 @@ class NotionHelper:
         has_more = True
         start_cursor = None
         while has_more:
+            print("从notion拉取数据...", datetime.now())
             response = self.client.databases.query(
                 database_id=database_id,
                 start_cursor=start_cursor,

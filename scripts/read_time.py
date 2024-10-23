@@ -82,20 +82,23 @@ def get_file():
 
 HEATMAP_GUIDE = "https://mp.weixin.qq.com/s?__biz=MzI1OTcxOTI4NA==&mid=2247484145&idx=1&sn=81752852420b9153fc292b7873217651&chksm=ea75ebeadd0262fc65df100370d3f983ba2e52e2fcde2deb1ed49343fbb10645a77570656728&token=157143379&lang=zh_CN#rd"
 if __name__ == "__main__":
+    os.environ['NOTION_PAGE'] = 'Life-OS-System-81b25bbd21684a3c943eb03a44b2f900'
+    os.environ['NOTION_TOKEN'] = 'secret_LAVFOz2S74ztgXTaDPuYKEjGEKPtflnk5IV0DbzW4vd'
+    os.environ['WEREAD_COOKIE'] = 'ptcz=754d621bb3cc45abb68f07d842270b8db5224d5c18bc38c78d239f19edb36567; pgv_pvid=6811236617; _qimei_uuid42=17c02151133100c79dcf768330e7e363052c0fa717; _qimei_q36=; wr_gid=273651192; wr_theme=white; RK=QHthLXYzU2; pac_uid=0_3fbe47a232d9f; iip=0; suid=ek171315182328217824; wr_vid=68910221; wr_pf=0; wr_rt=web%40xEmeptoh5f57cXUSQSQ_AL; wr_localvid=be8325e0741b7c8dbe86f3b; wr_name=Easonlee; wr_gender=1; wr_avatar=https%3A%2F%2Fwx.qlogo.cn%2Fmmhead%2FcyiaTKm65RvUN6Mnm27TwKefnx3fCSsEClhwOuysFbHw%2F0; qq_domain_video_guid_verify=aef172aa1a598b90; _ga=GA1.2.1031625882.1723940499; _ga_8YVFNWD1KC=GS1.2.1723940499.1.1.1723940531.0.0.0; _clck=3911196076|1|fon|0; _qimei_fingerprint=88a18db09377adee6270beae94358cff; _qimei_h38=b115791b9dcf768330e7e36303000006617c02; wr_fp=25923672; wr_skey=7SD1H2_a'
     notion_helper = NotionHelper()
     weread_api = WeReadApi()
-    image_file = get_file()
-    if image_file:
-        image_url = f"https://raw.githubusercontent.com/{os.getenv('REPOSITORY')}/{os.getenv('REF').split('/')[-1]}/OUT_FOLDER/{image_file}"
-        heatmap_url = f"https://heatmap.malinkang.com/?image={image_url}"
-        if notion_helper.heatmap_block_id:
-            response = notion_helper.update_heatmap(
-                block_id=notion_helper.heatmap_block_id, url=heatmap_url
-            )
-        else:
-            print(f"更新热力图失败，没有添加热力图占位。具体参考：{HEATMAP_GUIDE}")
-    else:
-        print(f"更新热力图失败，没有生成热力图。具体参考：{HEATMAP_GUIDE}")
+    #image_file = get_file()
+    #if image_file:
+    #    image_url = f"https://raw.githubusercontent.com/{os.getenv('REPOSITORY')}/{os.getenv('REF').split('/')[-1]}/OUT_FOLDER/{image_file}"
+    #    heatmap_url = f"https://heatmap.malinkang.com/?image={image_url}"
+    #    if notion_helper.heatmap_block_id:
+    #        response = notion_helper.update_heatmap(
+    #            block_id=notion_helper.heatmap_block_id, url=heatmap_url
+    #        )
+    #    else:
+    #        print(f"更新热力图失败，没有添加热力图占位。具体参考：{HEATMAP_GUIDE}")
+    #else:
+    #    print(f"更新热力图失败，没有生成热力图。具体参考：{HEATMAP_GUIDE}")
     api_data = weread_api.get_api_data()
     readTimes = {int(key): value for key, value in api_data.get("readTimes").items()}
     now = pendulum.now("Asia/Shanghai").start_of("day")

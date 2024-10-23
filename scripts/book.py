@@ -51,6 +51,7 @@ def insert_book_to_notion(books, index, bookId):
         book["书架分类"] = archive_dict.get(bookId)
     if bookId in notion_books:
         book.update(notion_books.get(bookId))
+
     bookInfo = weread_api.get_bookinfo(bookId)
     if bookInfo != None:
         book.update(bookInfo)
@@ -65,7 +66,7 @@ def insert_book_to_notion(books, index, bookId):
     markedStatus = book.get("markedStatus")
     status = "想读"
     if markedStatus == 4:
-        status = "已读"
+        status = "阅读完"
     elif book.get("readingTime", 0) >= 60:
         status = "在读"
     book["阅读状态"] = status
@@ -101,23 +102,23 @@ def insert_book_to_notion(books, index, bookId):
         book["BookId"] = book.get("bookId")
         book["ISBN"] = book.get("isbn")
         book["链接"] = utils.get_weread_url(bookId)
-        book["简介"] = book.get("intro")
+        #book["简介"] = book.get("intro")
         book["作者"] = [
             notion_helper.get_relation_id(
                 x, notion_helper.author_database_id, USER_ICON_URL
             )
             for x in book.get("author").split(" ")
         ]
-        if book.get("categories"):
-            book["分类"] = [
-                notion_helper.get_relation_id(
-                    x.get("title"), notion_helper.category_database_id, TAG_ICON_URL
-                )
-                for x in book.get("categories")
-            ]
+        #if book.get("categories"):
+        #    book["分类"] = [
+        #        notion_helper.get_relation_id(
+        #            x.get("title"), notion_helper.category_database_id, TAG_ICON_URL
+        #        )
+        #        for x in book.get("categories")
+        #    ]
     properties = utils.get_properties(book, book_properties_type_dict)
 
-    print(f"正在插入《{book.get('title')}》,一共{len(books)}本，当前是第{index+1}本。")
+    #print(f"正在插入《{book.get('title')}》,一共{len(books)}本，当前是第{index+1}本。")
     if not book.get("readDetail") or not book.get("readDetail").get("data"):
         print(f"《{book.get('title')}》没有阅读记录，跳过")
         return
@@ -207,7 +208,11 @@ if __name__ == "__main__":
     notion_helper = NotionHelper()
     notion_books = notion_helper.get_all_book()
     bookshelf_books = weread_api.get_bookshelf()
-    # 获取书架上的图书信息
+    # 有阅读记录的图书信息
+    # 样例数据：{'$bookId': {'bookId': '26062915', 'progress': 1, 'chapterUid': 8, 'chapterOffset': 0,
+    #   'chapterIdx': 8, 'appId'： '11413501'， 'updateTime': 1691221509, 'readingTime': 875,
+    #   'syncKey': 720606794}
+    # }
     bookProgress = bookshelf_books.get("bookProgress")
     bookProgress = {book.get("bookId"): book for book in bookProgress}
     archive_dict = {}
@@ -217,6 +222,12 @@ if __name__ == "__main__":
         bookIds = archive.get("bookIds")
         archive_dict.update({bookId: name for bookId in bookIds})
     not_need_sync = []
+    # Notion里的文献笔记
+    # 样例数据：{'$bookId': {'pageId': '10c911dc-da56-8106-8b58-ddaacc287c74', 'readingTime': 2325,
+    # 'category': None, 'Sort': None, 'douban_url': None,
+    # 'cover': {'type': 'external', 'external': {'url': 'https://bts-image.xyzcdn.net/aHR0cHM6Ly9pbWFnZS54eXpjZG4ubmV0L0ZxUWs2VThtWDU0YnZ3MFBsbm5HemtHMVpEajkuanBn.jpg'}},
+    # 'myRating': None, 'comment': None, 'status': '阅读完'}
+    # }
     for key, value in notion_books.items():
         if (
             (
@@ -224,22 +235,43 @@ if __name__ == "__main__":
                 or value.get("readingTime") == bookProgress.get(key).get("readingTime")
             )
             and (archive_dict.get(key) == value.get("category"))
-            and (value.get("cover") is not None)
-            and (
-                value.get("status") != "已读"
-                or (value.get("status") == "已读" and value.get("myRating"))
-            )
+            #and (value.get("cover") is not None)
+            #and (
+            #    value.get("status") != "已读"
+            #    or (value.get("status") == "已读" and value.get("myRating"))
+            #)
         ):
             #这里判定Notion中的书籍和微信中的书籍是否有属性发现变化，没有的话就不需要同步了
             not_need_sync.append(key)
             #continue
     notebooks = weread_api.get_notebooklist()
+    notebooks_map = {d["bookId"] : d for d in notebooks if "bookId" in d}
     notebooks = [d["bookId"] for d in notebooks if "bookId" in d]
+
     books = bookshelf_books.get("books")
+    bookshelf_map = {d["bookId"] : d for d in books if "bookId" in d}
     books = [d["bookId"] for d in books if "bookId" in d]
+
+
     books = list((set(notebooks) | set(books)) - set(not_need_sync))
+    len = len(books)
     for index, bookId in enumerate(books):
         try:
+            bp = bookProgress[bookId] if bookId in bookProgress  else None
+            bs = bookshelf_map[bookId] if bookId in bookshelf_map else None
+            nt = notebooks_map[bookId] if bookId in notebooks_map else None
+
+            title = bs['title'] if bs and 'title' in bs else ""
+            print(f"正在插入《{title}》,一共{len}本，当前是第{index + 1}本。")
+
+            if bp and bp['readingTime'] < 600:
+                print(f"《{title}》阅读不超时10分钟，跳过")
+                continue
+
+            if not nt:
+                print(f"《{title}》没有阅读笔记，跳过")
+                continue
+
             insert_book_to_notion(books, index, bookId)
         except Exception as e:
             print("处理book: " + bookId + "出现异常，跳过:")

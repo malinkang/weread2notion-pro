@@ -17,6 +17,9 @@ from utils import (
 )
 
 
+# 返回微信阅读最新的划线信息，会做如下两个处理：
+# a）如果划线在notion中存在，则设置blockid
+# b）如果划线在notion存在，但微信阅读已经不存在了，则从notion中删除。
 def get_bookmark_list(page_id, bookId):
     """获取我的划线"""
     filter = {
@@ -39,6 +42,7 @@ def get_bookmark_list(page_id, bookId):
     for i in bookmarks:
         if i.get("bookmarkId") in dict1:
             i["blockId"] = dict1.pop(i.get("bookmarkId"))
+    # 删除微信阅读上已经取消的划线
     for blockId in dict1.values():
         notion_helper.delete_block(blockId)
         notion_helper.delete_block(dict2.get(blockId))
@@ -65,6 +69,7 @@ def get_review_list(page_id,bookId):
     for i in reviews:
         if i.get("reviewId") in dict1:
             i["blockId"] = dict1.pop(i.get("reviewId"))
+    # 删除微信阅读已经取消的笔记
     for blockId in dict1.values():
         notion_helper.delete_block(blockId)
         notion_helper.delete_block(dict2.get(blockId))
@@ -142,51 +147,52 @@ def sort_notes(page_id, chapter, bookmark_list):
     notes = []
     if chapter != None:
         filter = {"property": "书籍", "relation": {"contains": page_id}}
+
+        # 已经插入到notion的chapter信息:
         results = notion_helper.query_all_by_book(
             notion_helper.chapter_database_id, filter
         )
-
-        # 已经插入到notion的chapter?
-        dict1 = {
+        chapterUId2BlockIdMap = {
             get_number_from_result(x, "chapterUid"): get_rich_text_from_result(
                 x, "blockId"
             )
             for x in results
         }
-        dict2 = {get_rich_text_from_result(x, "blockId"): x.get("id") for x in results}
+        blockId2ChapterMap = {get_rich_text_from_result(x, "blockId"): x.get("id") for x in results}
         # 按chapter聚合的划线和笔记
-        d = {}
+        notesByChapter = {}
         for data in bookmark_list:
             chapterUid = data.get("chapterUid", 1)
-            if chapterUid not in d:
-                d[chapterUid] = []
-            d[chapterUid].append(data)
+            if chapterUid not in notesByChapter:
+                notesByChapter[chapterUid] = []
+            notesByChapter[chapterUid].append(data)
 
         # 把章节信息也插入到notes中
-        for key, value in d.items():
+        for key, value in notesByChapter.items():
             if key in chapter:
-                if key in dict1:
-                    chapter.get(key)["blockId"] = dict1.pop(key)
+                if key in chapterUId2BlockIdMap:
+                    chapter.get(key)["blockId"] = chapterUId2BlockIdMap.pop(key)
                 notes.append(chapter.get(key))
             notes.extend(value)
 
-        for blockId in dict1.values():
+        for blockId in chapterUId2BlockIdMap.values():
             notion_helper.delete_block(blockId)
-            notion_helper.delete_block(dict2.get(blockId))
+            notion_helper.delete_block(blockId2ChapterMap.get(blockId))
     else:
         notes.extend(bookmark_list)
     return notes
 
 
-def append_blocks(id, contents):
+def append_blocks(pageId, contents):
     print(f"笔记数{len(contents)}")
     before_block_id = ""
-    block_children = notion_helper.get_block_children(id)
+    block_children = notion_helper.get_block_children(pageId)
+    # 先确保第一个block是toc，如果不是就插入一个
     if len(block_children) > 0 and block_children[0].get("type") == "table_of_contents":
         before_block_id = block_children[0].get("id")
     else:
         response = notion_helper.append_blocks(
-            block_id=id, children=[get_table_of_contents()]
+            block_id=pageId, children=[get_table_of_contents()]
         )
         before_block_id = response.get("results")[0].get("id")
     blocks = []
@@ -194,7 +200,7 @@ def append_blocks(id, contents):
     l = []
     for content in contents:
         if len(blocks) == 100:
-            results = append_blocks_to_notion(id, blocks, before_block_id, sub_contents)
+            results = append_blocks_to_notion(pageId, blocks, before_block_id, sub_contents)
             before_block_id = results[-1].get("blockId")
             l.extend(results)
             blocks.clear()
@@ -204,7 +210,7 @@ def append_blocks(id, contents):
         elif "blockId" in content:
             if len(blocks) > 0:
                 l.extend(
-                    append_blocks_to_notion(id, blocks, before_block_id, sub_contents)
+                    append_blocks_to_notion(pageId, blocks, before_block_id, sub_contents)
                 )
                 blocks.clear()
                 sub_contents.clear()
@@ -214,15 +220,15 @@ def append_blocks(id, contents):
             sub_contents.append(content)
 
     if len(blocks) > 0:
-        l.extend(append_blocks_to_notion(id, blocks, before_block_id, sub_contents))
+        l.extend(append_blocks_to_notion(pageId, blocks, before_block_id, sub_contents))
     for index, value in enumerate(l):
         print(f"正在插入第{index+1}条笔记，共{len(l)}条")
         if "bookmarkId" in value:
-            notion_helper.insert_bookmark(id, value)
+            notion_helper.insert_bookmark(pageId, value)
         elif "reviewId" in value:
-            notion_helper.insert_review(id, value)
+            notion_helper.insert_review(pageId, value)
         else:
-            notion_helper.insert_chapter(id, value)
+            notion_helper.insert_chapter(pageId, value)
 
 
 def content_to_block(content):
@@ -264,7 +270,6 @@ def append_blocks_to_notion(id, blocks, after, contents):
 if __name__ == "__main__":
     current_time = datetime.now()
     print("开始同步笔记，当前时间: ", current_time)
-
     parser = argparse.ArgumentParser()
     options = parser.parse_args()
     branch = os.getenv("REF").split("/")[-1]
@@ -291,6 +296,7 @@ if __name__ == "__main__":
             bookmark_list = get_bookmark_list(pageId, bookId)
             reviews = get_review_list(pageId,bookId)
             bookmark_list.extend(reviews)
+            #会把原来页面的所有自动同步的block删除（包括笔记、划线、章节）
             content = sort_notes(pageId, chapter, bookmark_list)
             append_blocks(pageId, content)
             properties = {
