@@ -4,10 +4,13 @@ import re
 import time
 
 from notion_client import Client
+import pendulum
 from retrying import retry
 from datetime import timedelta
 from dotenv import load_dotenv
-from utils import (
+
+load_dotenv()
+from weread2notionpro.utils  import (
     format_date,
     get_date,
     get_first_and_last_day_of_month,
@@ -22,7 +25,6 @@ from utils import (
     get_property_value,
 )
 
-load_dotenv()
 TAG_ICON_URL = "https://www.notion.so/icons/tag_gray.svg"
 USER_ICON_URL = "https://www.notion.so/icons/user-circle-filled_gray.svg"
 TARGET_ICON_URL = "https://www.notion.so/icons/target_red.svg"
@@ -32,13 +34,23 @@ BOOKMARK_ICON_URL = "https://www.notion.so/icons/bookmark_gray.svg"
 class NotionHelper:
     database_name_dict = {
         "BOOK_DATABASE_NAME": "书架",
+        "REVIEW_DATABASE_NAME": "笔记",
+        "BOOKMARK_DATABASE_NAME": "划线",
+        "DAY_DATABASE_NAME": "日",
+        "WEEK_DATABASE_NAME": "周",
+        "MONTH_DATABASE_NAME": "月",
+        "YEAR_DATABASE_NAME": "年",
+        "CATEGORY_DATABASE_NAME": "分类",
+        "AUTHOR_DATABASE_NAME": "作者",
         "CHAPTER_DATABASE_NAME": "章节",
         "READ_DATABASE_NAME": "阅读记录",
+        "SETTING_DATABASE_NAME": "设置",
     }
     database_id_dict = {}
     heatmap_block_id = None
-    property_dict = {}
-
+    show_color = True
+    block_type = "callout"
+    sync_bookmark = True
     def __init__(self):
         self.client = Client(auth=os.getenv("NOTION_TOKEN"), log_level=logging.ERROR)
         self.__cache = {}
@@ -50,55 +62,46 @@ class NotionHelper:
         self.book_database_id = self.database_id_dict.get(
             self.database_name_dict.get("BOOK_DATABASE_NAME")
         )
-        r = self.client.databases.retrieve(database_id=self.book_database_id)
-        for key, value in r.get("properties").items():
-            self.property_dict[key] = value
-        self.review_database_id = self.get_relation_database_id(
-            self.property_dict.get("读书笔记")
+        self.review_database_id = self.database_id_dict.get(
+            self.database_name_dict.get("REVIEW_DATABASE_NAME")
         )
-        self.bookmark_database_id = self.get_relation_database_id(
-            self.property_dict.get("划线")
+        self.bookmark_database_id = self.database_id_dict.get(
+            self.database_name_dict.get("BOOKMARK_DATABASE_NAME")
         )
-        self.day_database_id = self.get_relation_database_id(
-            self.property_dict.get("日")
+        self.day_database_id = self.database_id_dict.get(
+            self.database_name_dict.get("DAY_DATABASE_NAME")
         )
-        self.week_database_id = self.get_relation_database_id(
-            self.property_dict.get("周")
+        self.week_database_id = self.database_id_dict.get(
+            self.database_name_dict.get("WEEK_DATABASE_NAME")
         )
-        self.month_database_id = self.get_relation_database_id(
-            self.property_dict.get("月")
+        self.month_database_id = self.database_id_dict.get(
+            self.database_name_dict.get("MONTH_DATABASE_NAME")
         )
-        self.year_database_id = self.get_relation_database_id(
-            self.property_dict.get("年")
+        self.year_database_id = self.database_id_dict.get(
+            self.database_name_dict.get("YEAR_DATABASE_NAME")
         )
-        self.category_database_id = self.get_relation_database_id(
-            self.property_dict.get("分类")
+        self.category_database_id = self.database_id_dict.get(
+            self.database_name_dict.get("CATEGORY_DATABASE_NAME")
         )
-        self.author_database_id = self.get_relation_database_id(
-            self.property_dict.get("作者")
+        self.author_database_id = self.database_id_dict.get(
+            self.database_name_dict.get("AUTHOR_DATABASE_NAME")
         )
-        if "章节" in self.property_dict:
-            self.chapter_database_id = self.get_relation_database_id(
-                self.property_dict.get("章节")
-            )
-        else:
-            self.chapter_database_id = self.database_id_dict.get(
-                self.database_name_dict.get("CHAPTER_DATABASE_NAME")
-            )
-        if "阅读记录" in self.property_dict:
-            self.read_database_id = self.get_relation_database_id(
-                self.property_dict.get("阅读记录")
-            )
-        else:
-            self.read_database_id = self.database_id_dict.get(
-                self.database_name_dict.get("READ_DATABASE_NAME")
-            )
+        self.chapter_database_id = self.database_id_dict.get(
+            self.database_name_dict.get("CHAPTER_DATABASE_NAME")
+        )
+        self.read_database_id = self.database_id_dict.get(
+            self.database_name_dict.get("READ_DATABASE_NAME")
+        )  
+        self.setting_database_id = self.database_id_dict.get(
+            self.database_name_dict.get("SETTING_DATABASE_NAME")
+        )
         self.update_book_database()
         if self.read_database_id is None:
             self.create_database()
-
-    def get_relation_database_id(self, property):
-        return property.get("relation").get("database_id")
+        if self.setting_database_id is None:
+            self.create_setting_database()
+        if self.setting_database_id:
+            self.insert_to_setting_database()
 
     def extract_page_id(self, notion_url):
         # 正则表达式匹配 32 个字符的 Notion page_id
@@ -121,11 +124,7 @@ class NotionHelper:
                     child.get("id")
                 )
             elif child["type"] == "embed" and child.get("embed").get("url"):
-                if (
-                    child.get("embed")
-                    .get("url")
-                    .startswith("https://heatmap.malinkang.com/")
-                ):
+                if child.get("embed").get("url").startswith("https://heatmap.malinkang.com/"):
                     self.heatmap_block_id = child.get("id")
             # 如果子块有子块，递归调用函数
             if "has_children" in child and child["has_children"]:
@@ -163,8 +162,6 @@ class NotionHelper:
         ):
             update_properties["豆瓣短评"] = {"rich_text": {}}
         """NeoDB先不添加了，现在受众还不广，可能有的小伙伴不知道是干什么的"""
-        # if properties.get("NeoDB链接") is None or properties.get("NeoDB链接").get("type") != "url":
-        #     update_properties["NeoDB链接"] = {"url": {}}
         if len(update_properties) > 0:
             self.client.databases.update(database_id=id, properties=update_properties)
 
@@ -195,7 +192,79 @@ class NotionHelper:
             title=title,
             icon=get_icon("https://www.notion.so/icons/target_gray.svg"),
             properties=properties,
+        ).get("id")    
+        
+    def create_setting_database(self):
+        title = [
+            {
+                "type": "text",
+                "text": {
+                    "content": self.database_name_dict.get("SETTING_DATABASE_NAME"),
+                },
+            },
+        ]
+        properties = {
+            "标题": {"title": {}},
+            "NotinToken": {"rich_text": {}},
+            "NotinPage": {"rich_text": {}},
+            "WeReadCookie": {"rich_text": {}},
+            "根据划线颜色设置文字颜色": {"checkbox": {}},
+            "同步书签": {"checkbox": {}},
+            # "Cookie状态": {
+            #     "select": {
+            #         "options": [
+            #             {"name": "可用", "color": "green"},
+            #             {"name": "过期", "color": "red"},
+            #         ]
+            #     }
+            # },
+            "样式": {
+                "select": {
+                    "options": [
+                        {"name": "callout", "color": "blue"},
+                        {"name": "quote", "color": "green"},
+                        {"name": "paragraph", "color": "purple"},
+                        {"name": "bulleted_list_item", "color": "yellow"},
+                        {"name": "numbered_list_item", "color": "pink"},
+                    ]
+                }
+            },
+            "最后同步时间": {"date": {}},
+        }
+        parent = parent = {"page_id": self.page_id, "type": "page_id"}
+        self.setting_database_id = self.client.databases.create(
+            parent=parent,
+            title=title,
+            icon=get_icon("https://www.notion.so/icons/gear_gray.svg"),
+            properties=properties,
         ).get("id")
+
+    def insert_to_setting_database(self):
+        existing_pages = self.query(database_id=self.setting_database_id, filter={"property": "标题", "title": {"equals": "设置"}}).get("results")
+        properties = {
+            "标题": {"title": [{"type": "text", "text": {"content": "设置"}}]},
+            "最后同步时间": {"date": {"start": pendulum.now("Asia/Shanghai").isoformat()}},
+            "NotinToken": {"rich_text": [{"type": "text", "text": {"content": os.getenv("NOTION_TOKEN")}}]},
+            "NotinPage": {"rich_text": [{"type": "text", "text": {"content": os.getenv("NOTION_PAGE")}}]},
+            "WeReadCookie": {"rich_text": [{"type": "text", "text": {"content": os.getenv("WEREAD_COOKIE")}}]},
+        }
+        if existing_pages:
+            remote_properties = existing_pages[0].get("properties")
+            self.show_color = get_property_value(remote_properties.get("根据划线颜色设置文字颜色"))
+            self.sync_bookmark = get_property_value(remote_properties.get("同步书签"))
+            self.block_type = get_property_value(remote_properties.get("样式"))
+            page_id = existing_pages[0].get("id")
+            self.client.pages.update(page_id=page_id, properties=properties)
+        else:
+            properties["根据划线颜色设置文字颜色"] = {"checkbox": True}
+            properties["同步书签"] = {"checkbox": True}
+            properties["样式"] = {"select": {"name": "callout"}}
+            self.client.pages.create(
+                parent={"database_id": self.setting_database_id},
+                properties=properties,
+            )
+  
+        
 
     def update_heatmap(self, block_id, url):
         # 更新 image block 的链接
@@ -345,6 +414,7 @@ class NotionHelper:
             page_id=page_id, properties=properties, cover=cover
         )
 
+
     @retry(stop_max_attempt_number=3, wait_fixed=5000)
     def create_page(self, parent, properties, icon):
         return self.client.pages.create(parent=parent, properties=properties, icon=icon)
@@ -371,6 +441,10 @@ class NotionHelper:
 
     @retry(stop_max_attempt_number=3, wait_fixed=5000)
     def append_blocks_after(self, block_id, children, after):
+        #奇怪不知道为什么会多插入一个children，没找到问题，先暂时这么解决，搜索是否有parent
+        parent = self.client.blocks.retrieve(after).get("parent")
+        if(parent.get("type")=="block_id"):
+            after = parent.get("block_id")
         return self.client.blocks.children.append(
             block_id=block_id, children=children, after=after
         )
