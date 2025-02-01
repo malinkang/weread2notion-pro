@@ -1,6 +1,9 @@
 name: weread note sync
 
 on:
+  push:
+    branches:
+      - main  # or your default branch
   workflow_dispatch:
   schedule:
     - cron: "0 */3 * * *"
