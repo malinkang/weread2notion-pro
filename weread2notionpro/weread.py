@@ -233,8 +233,7 @@ def append_blocks_to_notion(id, blocks, after, contents):
         l.append(content)
     return l
 
-weread_api = WeReadApi()
-notion_helper = NotionHelper()
+weread_
 def main():
     print(f"123@@@")
     notion_books = notion_helper.get_all_book()
