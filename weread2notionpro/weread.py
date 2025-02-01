@@ -255,9 +255,10 @@ def main():
             chapter = weread_api.get_chapter_info(bookId)
             bookmark_list = get_bookmark_list(pageId, bookId)
             reviews = get_review_list(pageId,bookId)
-            print(reviews)
             bookmark_list.extend(reviews)
             content = sort_notes(pageId, chapter, bookmark_list)
+            print("testing:")
+            print(content)
             append_blocks(pageId, content)
             properties = {
                 "Sort":get_number(sort)
