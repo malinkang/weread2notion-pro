@@ -65,6 +65,7 @@ def get_review_list(page_id,bookId):
     for i in reviews:
         if i.get("reviewId") in dict1:
             i["blockId"] = dict1.pop(i.get("reviewId"))
+        print(i)
         if i.get("content"):
             content = i.get("content")
             if content.startswith("@"):
