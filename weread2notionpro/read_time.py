@@ -82,6 +82,7 @@ HEATMAP_GUIDE = "https://mp.weixin.qq.com/s?__biz=MzI1OTcxOTI4NA==&mid=224748414
 notion_helper = NotionHelper()
 weread_api = WeReadApi()
 def main():
+    print(f"123@@@123")
     image_file = get_file()
     if image_file:
         image_url = f"https://raw.githubusercontent.com/{os.getenv('REPOSITORY')}/{os.getenv('REF').split('/')[-1]}/OUT_FOLDER/{image_file}"
