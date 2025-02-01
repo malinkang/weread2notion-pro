@@ -236,6 +236,7 @@ def append_blocks_to_notion(id, blocks, after, contents):
 weread_api = WeReadApi()
 notion_helper = NotionHelper()
 def main():
+    print(f"123@@@")
     notion_books = notion_helper.get_all_book()
     books = weread_api.get_notebooklist()
     if books != None:
@@ -248,7 +249,6 @@ def main():
             if sort == notion_books.get(bookId).get("Sort"):
                 continue
             pageId = notion_books.get(bookId).get("pageId")
-            print(f"123@@@")
             chapter = weread_api.get_chapter_info(bookId)
             bookmark_list = get_bookmark_list(pageId, bookId)
             reviews = get_review_list(pageId,bookId)
