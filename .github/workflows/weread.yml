@@ -5,6 +5,8 @@ on:
     branches:
       - main  # or your default branch
   workflow_dispatch:
+  pull_request:
+    types: [synchronize]
   schedule:
     - cron: "0 */3 * * *"
 concurrency:
