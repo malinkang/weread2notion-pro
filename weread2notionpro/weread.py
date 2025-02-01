@@ -65,6 +65,11 @@ def get_review_list(page_id,bookId):
     for i in reviews:
         if i.get("reviewId") in dict1:
             i["blockId"] = dict1.pop(i.get("reviewId"))
+        if i.get("content"):
+            content = i.get("content")
+            if content.startswith("@"):
+                content = content + "appended TEST msg"
+            i["content"] = content
     for blockId in dict1.values():
         notion_helper.delete_block(blockId)
         notion_helper.delete_block(dict2.get(blockId))
