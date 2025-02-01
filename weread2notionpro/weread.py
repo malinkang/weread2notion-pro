@@ -238,8 +238,7 @@ def main():
     print(f"123@@@")
     notion_books = notion_helper.get_all_book()
     books = weread_api.get_notebooklist()
-    if books != None:
-        for index, book in enumerate(books):
+    enumerate(books):
             bookId = book.get("bookId")
             title = book.get("book").get("title")
             sort = book.get("sort")
