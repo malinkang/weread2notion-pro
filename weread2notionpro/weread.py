@@ -34,6 +34,11 @@ def get_bookmark_list(page_id, bookId):
     for i in bookmarks:
         if i.get("bookmarkId") in dict1:
             i["blockId"] = dict1.pop(i.get("bookmarkId"))
+        if i.get("content"):
+            content = i.get("content")
+            if content.startswith("@"):
+                content = content + "appended TEST msg"
+            i["content"] = content
     for blockId in dict1.values():
         notion_helper.delete_block(blockId)
         notion_helper.delete_block(dict2.get(blockId))
