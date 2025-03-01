@@ -7,7 +7,9 @@ import requests
 from requests.utils import cookiejar_from_dict
 from retrying import retry
 from urllib.parse import quote
+from dotenv import load_dotenv
 
+load_dotenv()
 WEREAD_URL = "https://weread.qq.com/"
 WEREAD_NOTEBOOKS_URL = "https://i.weread.qq.com/user/notebooks"
 WEREAD_BOOKMARKLIST_URL = "https://i.weread.qq.com/book/bookmarklist"

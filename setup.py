@@ -1,13 +1,14 @@
 from setuptools import setup, find_packages
 
 setup(
-    version="0.2.2",
+    version="0.2.5",
     packages=find_packages(),
     install_requires=[
         "requests",
         "pendulum",
         "retrying",
         "notion-client",
+        "github-heatmap",
         "github-heatmap",
     ],
     entry_points={

@@ -152,9 +152,7 @@ def get_block(content,type,show_color, style, colorStyle, reviewId):
         # 如果reviewId不是空说明是笔记
         if reviewId != None:
             emoji = "✍️"
-        print(f"emoji = {emoji}")
         block[type]["icon"] = {"emoji": emoji}
-    print(f"block = {block}")
     return block
 
 
