@@ -1,44 +1,14 @@
-import argparse
-from datetime import datetime, timedelta
-import os
-
 import pendulum
-import requests
-from notion_helper import NotionHelper
-
-from weread_api import WeReadApi
-import utils
-from config import book_properties_type_dict, tz
-from retrying import retry
+from weread2notionpro.notion_helper import NotionHelper
+from weread2notionpro.weread_api import WeReadApi
+from weread2notionpro import utils
+from weread2notionpro.config import book_properties_type_dict, tz
 
 TAG_ICON_URL = "https://www.notion.so/icons/tag_gray.svg"
 USER_ICON_URL = "https://www.notion.so/icons/user-circle-filled_gray.svg"
 BOOK_ICON_URL = "https://www.notion.so/icons/book_gray.svg"
-
 rating = {"poor": "⭐️", "fair": "⭐️⭐️⭐️", "good": "⭐️⭐️⭐️⭐️⭐️"}
 
-
-@retry(stop_max_attempt_number=3, wait_fixed=5000)
-def get_douban_url(isbn):
-    print(f"get_douban_url {isbn} ")
-    params = {"query": isbn, "page": "1", "category": "book"}
-    r = requests.get("https://neodb.social/api/catalog/search", params=params)
-    books = r.json().get("data")
-    if books is None or len(books) == 0:
-        return None
-    results = list(filter(lambda x: x.get("isbn") == isbn, books))
-    if len(results) == 0:
-        return None
-    result = results[0]
-    urls = list(
-        filter(
-            lambda x: x.get("url").startswith("https://book.douban.com"),
-            result.get("external_resources", []),
-        )
-    )
-    if len(urls) == 0:
-        return None
-    return urls[0].get("url")
 
 
 def insert_book_to_notion(books, index, bookId):
@@ -73,29 +43,21 @@ def insert_book_to_notion(books, index, bookId):
         book["我的评分"] = rating.get(book.get("newRatingDetail").get("myRating"))
     elif status == "已读":
         book["我的评分"] = "未评分"
-    date = None
-    if book.get("finishedDate"):
-        date = book.get("finishedDate")
-    elif book.get("lastReadingDate"):
-        date = book.get("lastReadingDate")
-    elif book.get("readingBookDate"):
-        date = book.get("readingBookDate")
-    book["时间"] = date
+    book["时间"] = (
+        book.get("finishedDate")
+        or book.get("lastReadingDate")
+        or book.get("readingBookDate")
+    )
     book["开始阅读时间"] = book.get("beginReadingDate")
     book["最后阅读时间"] = book.get("lastReadingDate")
     cover = book.get("cover").replace("/s_", "/t7_")
-    if not cover and not cover.strip() and not cover.startswith("http"):
+    if not cover or not cover.strip() or not cover.startswith("http"):
         cover = BOOK_ICON_URL
     if bookId not in notion_books:
-        isbn = book.get("isbn")
-        if isbn and isbn.strip():
-            douban_url = get_douban_url(isbn)
-            if douban_url:
-                book["douban_url"] = douban_url
         book["书名"] = book.get("title")
         book["BookId"] = book.get("bookId")
         book["ISBN"] = book.get("isbn")
-        book["链接"] = utils.get_weread_url(bookId)
+        book["链接"] = weread_api.get_url(bookId)
         book["简介"] = book.get("intro")
         book["作者"] = [
             notion_helper.get_relation_id(
@@ -117,7 +79,9 @@ def insert_book_to_notion(books, index, bookId):
             pendulum.from_timestamp(book.get("时间"), tz="Asia/Shanghai"),
         )
 
-    print(f"正在插入《{book.get('title')}》,一共{len(books)}本，当前是第{index+1}本。")
+    print(
+        f"正在插入《{book.get('title')}》,一共{len(books)}本，当前是第{index+1}本。"
+    )
     parent = {"database_id": notion_helper.book_database_id, "type": "database_id"}
     result = None
     if bookId in notion_books:
@@ -185,14 +149,19 @@ def insert_to_notion(page_id, timestamp, duration, book_database_id):
         )
 
 
-if __name__ == "__main__":
-    weread_api = WeReadApi()
-    notion_helper = NotionHelper()
-    notion_books = notion_helper.get_all_book()
+weread_api = WeReadApi()
+notion_helper = NotionHelper()
+archive_dict = {}
+notion_books = {}
+
+
+def main():
+    global notion_books
+    global archive_dict
     bookshelf_books = weread_api.get_bookshelf()
+    notion_books = notion_helper.get_all_book()
     bookProgress = bookshelf_books.get("bookProgress")
     bookProgress = {book.get("bookId"): book for book in bookProgress}
-    archive_dict = {}
     for archive in bookshelf_books.get("archive"):
         name = archive.get("name")
         bookIds = archive.get("bookIds")
@@ -219,3 +188,7 @@ if __name__ == "__main__":
     books = list((set(notebooks) | set(books)) - set(not_need_sync))
     for index, bookId in enumerate(books):
         insert_book_to_notion(books, index, bookId)
+
+
+if __name__ == "__main__":
+    main()
