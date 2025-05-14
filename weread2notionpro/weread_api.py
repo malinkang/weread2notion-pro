@@ -74,7 +74,7 @@ class WeReadApi:
         self.session.get(WEREAD_URL)
         #https://weread.qq.com/web/shelf/syncBook
         r = self.session.get(
-            "https://weread.qq.com/web/shelf/sync?synckey=0&teenmode=0&album=1&onlyBookid=0"
+            "https://weread.qq.com/web/shelf/syncBook?synckey=0&teenmode=0&album=1&onlyBookid=0"
         )
         if r.ok:
             return r.json()
