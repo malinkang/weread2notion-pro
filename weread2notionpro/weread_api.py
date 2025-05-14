@@ -11,14 +11,14 @@ from dotenv import load_dotenv
 
 load_dotenv()
 WEREAD_URL = "https://weread.qq.com/"
-WEREAD_NOTEBOOKS_URL = "https://i.weread.qq.com/user/notebooks"
-WEREAD_BOOKMARKLIST_URL = "https://i.weread.qq.com/book/bookmarklist"
-WEREAD_CHAPTER_INFO = "https://i.weread.qq.com/book/chapterInfos"
-WEREAD_READ_INFO_URL = "https://i.weread.qq.com/book/readinfo"
-WEREAD_REVIEW_LIST_URL = "https://i.weread.qq.com/review/list"
-WEREAD_BOOK_INFO = "https://i.weread.qq.com/book/info"
-WEREAD_READDATA_DETAIL = "https://i.weread.qq.com/readdata/detail"
-WEREAD_HISTORY_URL = "https://i.weread.qq.com/readdata/summary?synckey=0"
+WEREAD_NOTEBOOKS_URL = "https://weread.qq.com/api/user/notebook"
+WEREAD_BOOKMARKLIST_URL = "https://weread.qq.com/web/book/bookmarklist"
+WEREAD_CHAPTER_INFO = "https://weread.qq.com/web/book/chapterInfos"
+WEREAD_READ_INFO_URL = "https://weread.qq.com/web/book/readinfo"
+WEREAD_REVIEW_LIST_URL = "https://weread.qq.com/web/review/list"
+WEREAD_BOOK_INFO = "https://weread.qq.com/web/book/info"
+WEREAD_READDATA_DETAIL = "https://weread.qq.com/web/readdata/detail"
+WEREAD_HISTORY_URL = "https://weread.qq.com/web/readdata/summary?synckey=0"
 
 
 class WeReadApi:
@@ -47,8 +47,6 @@ class WeReadApi:
 
     def get_cookie(self):
         url = os.getenv("CC_URL")
-        if not url:
-            url = "https://cookiecloud.malinkang.com/"
         id = os.getenv("CC_ID")
         password = os.getenv("CC_PASSWORD")
         cookie = os.getenv("WEREAD_COOKIE")
@@ -74,8 +72,9 @@ class WeReadApi:
 
     def get_bookshelf(self):
         self.session.get(WEREAD_URL)
+        #https://weread.qq.com/web/shelf/syncBook
         r = self.session.get(
-            "https://i.weread.qq.com/shelf/sync?synckey=0&teenmode=0&album=1&onlyBookid=0"
+            "https://weread.qq.com/web/shelf/sync?synckey=0&teenmode=0&album=1&onlyBookid=0"
         )
         if r.ok:
             return r.json()
