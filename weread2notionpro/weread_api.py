@@ -123,7 +123,7 @@ class WeReadApi:
             return r.json()
         else:
             errcode = r.json().get("errcode",0)
-            self.(errcode)
+            self.handle_errcode(errcode)
             print(f"Could not get book info {r.text}")
 
 
@@ -139,7 +139,7 @@ class WeReadApi:
             return bookmarks
         else:
             errcode = r.json().get("errcode",0)
-            self.(errcode)
+            self.handle_errcode(errcode)
             raise Exception(f"Could not get {bookId} bookmark list")
 
     @retry(stop_max_attempt_number=3, wait_fixed=5000)
@@ -167,7 +167,7 @@ class WeReadApi:
             return r.json()
         else:
             errcode = r.json().get("errcode",0)
-            self.(errcode)
+            self.handle_errcode(errcode)
             raise Exception(f"get {bookId} read info failed {r.text}")
 
     @retry(stop_max_attempt_number=3, wait_fixed=5000)
@@ -185,7 +185,7 @@ class WeReadApi:
             return reviews
         else:
             errcode = r.json().get("errcode",0)
-            self.(errcode)
+            self.handle_errcode(errcode)
             raise Exception(f"get {bookId} review list failed {r.text}")
 
 
@@ -198,7 +198,7 @@ class WeReadApi:
             return r.json()
         else:
             errcode = r.json().get("errcode",0)
-            self.(errcode)
+            self.handle_errcode(errcode)
             raise Exception(f"get history data failed {r.text}")
 
     
