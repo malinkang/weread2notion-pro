@@ -18,7 +18,7 @@ WEREAD_READ_INFO_URL = "https://weread.qq.com/web/book/readinfo"
 WEREAD_REVIEW_LIST_URL = "https://weread.qq.com/web/review/list"
 WEREAD_BOOK_INFO = "https://weread.qq.com/web/book/info"
 WEREAD_READDATA_DETAIL = "https://weread.qq.com/web/readdata/detail"
-WEREAD_HISTORY_URL = "https://weread.qq.com/web/readdata/summary?synckey=0"
+WEREAD_HISTORY_URL = "https://weread.qq.com/web/pay/memberCardSummary?synckey=0"
 
 
 class WeReadApi:
