@@ -280,6 +280,7 @@ if __name__ == "__main__":
     books = weread_api.get_notebooklist()
     #print(notion_books)
     #print(books)
+    #测试推送
     if books != None:
         for index, book in enumerate(books):
             bookId = book.get("bookId")
