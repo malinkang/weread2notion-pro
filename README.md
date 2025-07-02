@@ -6,6 +6,9 @@
 预览效果：[https://malinkang.notion.site/malinkang/534a7684b30e4a879269313f437f2185](https://malinkang.notion.site/9a311b7413b74c8788752249edd0b256?pvs=25)
 
 
+> [!CAUTION]  
+> 目前项目已不能使用，可以通过chrome插件来使用：https://www.notionhub.app/docs/install.html
+
 ## 使用
 
 > [!IMPORTANT]  
