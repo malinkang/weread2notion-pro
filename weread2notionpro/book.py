@@ -18,30 +18,44 @@ def insert_book_to_notion(books, index, bookId):
         book["书架分类"] = archive_dict.get(bookId)
     if bookId in notion_books:
         book.update(notion_books.get(bookId))
+
+    # 尝试从 books_metadata 中获取基础信息（来自 entire_shelf）
+    if bookId in books_metadata:
+        book.update(books_metadata[bookId])
+
     try:
         bookInfo = weread_api.get_bookinfo(bookId)
         if bookInfo != None:
             book.update(bookInfo)
     except Exception as e:
-        print(f"获取书籍信息失败 bookId={bookId}: {e}")
-        # 继续处理，不中断整个流程
-    readInfo = weread_api.get_read_info(bookId)
+        # 本地书籍（CB_ 开头）无法通过 API 获取详细信息，这是正常的
+        if not bookId.startswith("CB_"):
+            print(f"获取书籍信息失败 bookId={bookId}: {e}")
+
+    try:
+        readInfo = weread_api.get_read_info(bookId)
+    except Exception as e:
+        if not bookId.startswith("CB_"):
+            print(f"获取阅读信息失败 bookId={bookId}: {e}")
+        readInfo = {}
     # 研究了下这个状态不知道什么情况有的虽然读了状态还是1 markedStatus = 1 想读 4 读完 其他为在读
-    readInfo.update(readInfo.get("readDetail", {}))
-    readInfo.update(readInfo.get("bookInfo", {}))
-    book.update(readInfo)
+    if readInfo:
+        readInfo.update(readInfo.get("readDetail", {}))
+        readInfo.update(readInfo.get("bookInfo", {}))
+        book.update(readInfo)
+    # 处理可能为 None 的数值字段
     book["阅读进度"] = (
-        100 if (book.get("markedStatus") == 4) else book.get("readingProgress", 0)
+        100 if (book.get("markedStatus") == 4) else (book.get("readingProgress") or 0)
     ) / 100
     markedStatus = book.get("markedStatus")
     status = "想读"
     if markedStatus == 4:
         status = "已读"
-    elif book.get("readingTime", 0) >= 60:
+    elif (book.get("readingTime") or 0) >= 60:
         status = "在读"
     book["阅读状态"] = status
-    book["阅读时长"] = book.get("readingTime")
-    book["阅读天数"] = book.get("totalReadDay")
+    book["阅读时长"] = book.get("readingTime") or 0
+    book["阅读天数"] = book.get("totalReadDay") or 0
     book["评分"] = book.get("newRating")
     if book.get("newRatingDetail") and book.get("newRatingDetail").get("myRating"):
         book["我的评分"] = rating.get(book.get("newRatingDetail").get("myRating"))
@@ -66,17 +80,31 @@ def insert_book_to_notion(books, index, bookId):
     if not cover or not cover.strip() or not cover.startswith("http"):
         cover = BOOK_ICON_URL
     if bookId not in notion_books:
-        book["书名"] = book.get("title")
+        book["书名"] = book.get("title") or f"未知书名-{bookId}"
         book["BookId"] = book.get("bookId")
         book["ISBN"] = book.get("isbn")
         book["链接"] = weread_api.get_url(bookId)
         book["简介"] = book.get("intro")
-        book["作者"] = [
-            notion_helper.get_relation_id(
-                x, notion_helper.author_database_id, USER_ICON_URL
-            )
-            for x in book.get("author").split(" ")
-        ]
+
+        # 处理作者字段 - 可能为 None（本地书籍）
+        author = book.get("author")
+        if author:
+            book["作者"] = [
+                notion_helper.get_relation_id(
+                    x, notion_helper.author_database_id, USER_ICON_URL
+                )
+                for x in author.split(" ")
+            ]
+        else:
+            # 本地书籍可能没有作者信息，使用默认值
+            book["作者"] = [
+                notion_helper.get_relation_id(
+                    "未知作者", notion_helper.author_database_id, USER_ICON_URL
+                )
+            ]
+            if not bookId.startswith("CB_"):
+                print(f"警告: 书籍 {bookId} 缺少作者信息，使用默认值")
+
         if book.get("categories"):
             book["分类"] = [
                 notion_helper.get_relation_id(
@@ -91,7 +119,8 @@ def insert_book_to_notion(books, index, bookId):
             pendulum.from_timestamp(book.get("时间"), tz="Asia/Shanghai"),
         )
 
-    print(f"正在插入《{book.get('title')}》,一共{len(books)}本，当前是第{index+1}本。")
+    title = book.get('title') or f"未知书名-{bookId}"
+    print(f"正在插入《{title}》,一共{len(books)}本，当前是第{index+1}本。")
     parent = {"database_id": notion_helper.book_database_id, "type": "database_id"}
     result = None
     if bookId in notion_books:
@@ -163,24 +192,53 @@ weread_api = WeReadApi()
 notion_helper = NotionHelper()
 archive_dict = {}
 notion_books = {}
+books_metadata = {}  # 存储从 entire_shelf 获取的书籍元数据
 
 
 def main():
     global notion_books
     global archive_dict
+    global books_metadata
+
+    # 原始方法：获取笔记本书架
     bookshelf_books = weread_api.get_bookshelf()
+
+    # 获取完整书架（包含本地书籍）
+    entire_shelf = None
+    try:
+        entire_shelf = weread_api.get_entire_shelf()
+        # 提取书籍元数据（特别是本地书籍的基础信息）
+        if entire_shelf and entire_shelf.get("books"):
+            for book_data in entire_shelf["books"]:
+                book_id = book_data.get("bookId")
+                if book_id:
+                    books_metadata[book_id] = book_data
+    except Exception as e:
+        print(f"获取完整书架失败，回退到笔记本书架: {e}")
+        entire_shelf = None
+
     notion_books = notion_helper.get_all_book()
 
-    # 处理bookProgress - 如果不存在则创建空字典
-    bookProgress = bookshelf_books.get("bookProgress")
+    # 处理bookProgress - 优先使用 entire_shelf，回退到 bookshelf_books
+    bookProgress = None
+    if entire_shelf and entire_shelf.get("bookProgress"):
+        bookProgress = entire_shelf.get("bookProgress")
+    else:
+        bookProgress = bookshelf_books.get("bookProgress")
+
     if bookProgress is None:
         print("警告: 未找到bookProgress数据，使用空数据继续")
         bookProgress = {}
     else:
         bookProgress = {book.get("bookId"): book for book in bookProgress}
 
-    # 处理archive - 如果不存在则跳过
-    archives = bookshelf_books.get("archive")
+    # 处理archive - 优先使用 entire_shelf，回退到 bookshelf_books
+    archives = None
+    if entire_shelf and entire_shelf.get("archive"):
+        archives = entire_shelf.get("archive")
+    else:
+        archives = bookshelf_books.get("archive")
+
     if archives is None:
         print("警告: 未找到archive数据，跳过书架分类")
     else:
@@ -188,6 +246,7 @@ def main():
             name = archive.get("name")
             bookIds = archive.get("bookIds")
             archive_dict.update({bookId: name for bookId in bookIds})
+
     not_need_sync = []
     for key, value in notion_books.items():
         if (
@@ -203,11 +262,25 @@ def main():
             )
         ):
             not_need_sync.append(key)
+
     notebooks = weread_api.get_notebooklist()
     notebooks = [d["bookId"] for d in notebooks if "bookId" in d]
-    books = bookshelf_books.get("books")
-    books = [d["bookId"] for d in books if "bookId" in d]
-    books = list((set(notebooks) | set(books)) - set(not_need_sync))
+
+    # 合并书籍来源
+    books_from_bookshelf = bookshelf_books.get("books", [])
+    books_from_bookshelf = [d["bookId"] for d in books_from_bookshelf if "bookId" in d]
+
+    # 如果成功获取 entire_shelf，合并其书籍
+    if entire_shelf and entire_shelf.get("books"):
+        books_from_entire = [d["bookId"] for d in entire_shelf.get("books") if "bookId" in d]
+        # 合并所有书籍ID（去重）
+        all_book_ids = set(notebooks) | set(books_from_bookshelf) | set(books_from_entire)
+    else:
+        # 回退到原有逻辑
+        all_book_ids = set(notebooks) | set(books_from_bookshelf)
+
+    books = list(all_book_ids - set(not_need_sync))
+
     for index, bookId in enumerate(books):
         insert_book_to_notion(books, index, bookId)
 
